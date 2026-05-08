@@ -115,9 +115,9 @@ andy-skills install --registry http://localhost:5289 my-namespace/my-skill@1.0.0
 ```
 
 One-off without global install (still requires Node): `npx` resolves and runs the package binary the same way, e.g. from the registry after **`npm publish`**,  
-`npx --yes @andy-skills/cli install …`.
+`npx --yes @andy-skill/cli install …`.
 
-After **`npm publish`** of `@andy-skills/cli`, `npx @andy-skills/cli install …` works without cloning this repo (same underlying CLI).
+After **`npm publish`** of `@andy-skill/cli`, `npx @andy-skill/cli install …` works without cloning this repo (same underlying CLI).
 
 ### Without installing globally — still uses Node
 

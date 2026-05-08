@@ -1,5 +1,5 @@
 {
-  "name": "@andy-skills/cli",
+  "name": "@andy-skill/cli",
   "version": "0.1.0",
   "description": "Install a skill ZIP from the Skill Registry into a local skills folder (full tree preserved).",
   "license": "MIT",

@@ -1,4 +1,4 @@
-# @andy-skills/cli
+# @andy-skill/cli
 
 Download a skill ZIP from a [Skill Registry](https://github.com/rivoli-ai/andy-skills) (`GET /api/install/...`) and extract it under **`~/.agents/skills`** (or `--dir`), preserving the archive layout.
 
@@ -9,7 +9,7 @@ Download a skill ZIP from a [Skill Registry](https://github.com/rivoli-ai/andy-s
 ## Install
 
 ```bash
-npm install -g @andy-skills/cli
+npm install -g @andy-skill/cli
 ```
 
 ## Usage
@@ -27,12 +27,12 @@ Help: `andy-skills --help`
 ## Without global install
 
 ```bash
-npx --yes @andy-skills/cli install --registry https://your-registry.example.com my-ns/my-skill@1.0.0
+npx --yes @andy-skill/cli install --registry https://your-registry.example.com my-ns/my-skill@1.0.0
 ```
 
 ## Publishing (maintainers)
 
-Requires npm login and permission to publish under **`@andy-skills`**.
+Requires npm login and permission to publish under your npm org **`@andy-skill`** (must match the package scope).
 
 ```bash
 npm login
