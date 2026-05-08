@@ -95,23 +95,23 @@ cd /path/to/andy-skills/cli
 npm install
 
 # From repo root (andy-skills/)
-node cli/bin/andy-skills.js install --registry http://localhost:5289 my-namespace my-skill 1.0.0
+node cli/bin/andy-skill.js install --registry http://localhost:5289 my-namespace my-skill 1.0.0
 
 # Or shorthand:
-node cli/bin/andy-skills.js install --registry http://localhost:5289 my-namespace/my-skill@1.0.0
+node cli/bin/andy-skill.js install --registry http://localhost:5289 my-namespace/my-skill@1.0.0
 
 # Default registry via env:
-SKILL_REGISTRY_URL=http://localhost:5289 node cli/bin/andy-skills.js install my-namespace/my-skill@1.0.0
+SKILL_REGISTRY_URL=http://localhost:5289 node cli/bin/andy-skill.js install my-namespace/my-skill@1.0.0
 
 # Another editor’s folder (example: Cline):
-node cli/bin/andy-skills.js install --registry http://localhost:5289 my-namespace/my-skill@1.0.0 --dir ~/.cline/skills
+node cli/bin/andy-skill.js install --registry http://localhost:5289 my-namespace/my-skill@1.0.0 --dir ~/.cline/skills
 ```
 
-Install the CLI globally from the clone — **`andy-skills`** is then on your `PATH` (npm adds the shim; you never type `node` yourself):
+Install the CLI globally from the clone — **`andy-skill`** is then on your `PATH` (npm adds the shim; you never type `node` yourself):
 
 ```bash
 cd /path/to/andy-skills/cli && npm install && npm install -g .
-andy-skills install --registry http://localhost:5289 my-namespace/my-skill@1.0.0
+andy-skill install --registry http://localhost:5289 my-namespace/my-skill@1.0.0
 ```
 
 One-off without global install (still requires Node): `npx` resolves and runs the package binary the same way, e.g. from the registry after **`npm publish`**,  

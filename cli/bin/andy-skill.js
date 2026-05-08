@@ -8,8 +8,8 @@ const { buildInstallUrl, downloadZip, extractZip } = require('../lib/install.js'
 function printHelp() {
   console.log(`
 Usage:
-  andy-skills install [options] <namespace> <skill> <version>
-  andy-skills install [options] <namespace>/<skill>@<version>
+  andy-skill install [options] <namespace> <skill> <version>
+  andy-skill install [options] <namespace>/<skill>@<version>
 
 Options:
   --registry <url>   API origin (default: $SKILL_REGISTRY_URL or http://localhost:5289)
@@ -17,9 +17,9 @@ Options:
   -h, --help         Show help
 
 Examples:
-  andy-skills install --registry http://localhost:5289 acme email-helper 1.0.0
-  andy-skills install acme/email-helper@1.0.0
-  SKILL_REGISTRY_URL=https://skills.example.com andy-skills install acme/email-helper@2.1.0 --dir ~/.cursor/skills
+  andy-skill install --registry http://localhost:5289 acme email-helper 1.0.0
+  andy-skill install acme/email-helper@1.0.0
+  SKILL_REGISTRY_URL=https://skills.example.com andy-skill install acme/email-helper@2.1.0 --dir ~/.cursor/skills
 
 Uses: {registry}/api/install/{namespace}/{skill}/{version}/package.zip
 `);

@@ -145,18 +145,18 @@ export class NamespaceDetailComponent implements OnInit, OnDestroy {
     this.skillMdView.set(null);
   }
 
-  /** One-liner assuming `andy-skills` is on PATH (`npm install -g ./cli` from repo). */
+  /** One-liner assuming `andy-skill` is on PATH (`npm install -g ./cli` from repo). */
   cliInstallGlobal(skillSlug: string, version: string): string {
     const ns = this.nsSlug();
     const r = environment.cliRegistryUrl.replace(/\/+$/, '');
-    return `andy-skills install --registry ${r} ${ns} ${skillSlug} ${version}`;
+    return `andy-skill install --registry ${r} ${ns} ${skillSlug} ${version}`;
   }
 
   /** From cloned repo root; installs CLI deps then extracts into ~/.agents/skills by default. */
   cliInstallFromRepo(skillSlug: string, version: string): string {
     const ns = this.nsSlug();
     const r = environment.cliRegistryUrl.replace(/\/+$/, '');
-    return `cd cli && npm install && node bin/andy-skills.js install --registry ${r} ${ns}/${skillSlug}@${version}`;
+    return `cd cli && npm install && node bin/andy-skill.js install --registry ${r} ${ns}/${skillSlug}@${version}`;
   }
 
   async copyText(text: string): Promise<void> {

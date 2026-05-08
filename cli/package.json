@@ -1,6 +1,6 @@
 {
   "name": "@andy-skill/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Install a skill ZIP from the Skill Registry into a local skills folder (full tree preserved).",
   "license": "MIT",
   "repository": {
@@ -19,13 +19,13 @@
     "cli",
     "skill-registry",
     "zip",
-    "andy-skills"
+    "andy-skill"
   ],
   "engines": {
     "node": ">=18"
   },
   "bin": {
-    "andy-skills": "bin/andy-skills.js"
+    "andy-skill": "bin/andy-skill.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16"

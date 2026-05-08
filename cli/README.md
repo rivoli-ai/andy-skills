@@ -15,14 +15,14 @@ npm install -g @andy-skill/cli
 ## Usage
 
 ```bash
-andy-skills install --registry https://your-registry.example.com my-ns my-skill 1.0.0
-andy-skills install my-ns/my-skill@1.0.0
+andy-skill install --registry https://your-registry.example.com my-ns my-skill 1.0.0
+andy-skill install my-ns/my-skill@1.0.0
 
-SKILL_REGISTRY_URL=https://your-registry.example.com andy-skills install my-ns/my-skill@1.0.0
-andy-skills install my-ns my-skill 1.0.0 --dir ~/.cursor/skills
+SKILL_REGISTRY_URL=https://your-registry.example.com andy-skill install my-ns/my-skill@1.0.0
+andy-skill install my-ns my-skill 1.0.0 --dir ~/.cursor/skills
 ```
 
-Help: `andy-skills --help`
+Help: `andy-skill --help`
 
 ## Without global install
 
