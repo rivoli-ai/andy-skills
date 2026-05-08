@@ -1,0 +1,22 @@
+services:
+  # Same Postgres credentials as DevPilot docker-compose (analyser / analyser_password).
+  # Only the database name differs: skillregistry (DevPilot uses analyzer by default).
+  # Prefer DevPilot’s postgres when both apps run: create DB skillregistry there and skip this service.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-analyser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-analyser_password}
+      POSTGRES_DB: skillregistry
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - skillregistry_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-analyser} -d skillregistry"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  skillregistry_pg:

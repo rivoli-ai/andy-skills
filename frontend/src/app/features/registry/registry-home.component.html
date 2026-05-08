@@ -1,0 +1,71 @@
+<section class="hero card-surface">
+  <h2 class="hero-title">Namespaces</h2>
+  <p class="hero-copy">
+    Organize skills under namespaces (same idea as SkillHub). Create one below, then open it to add packages and publish versions.
+  </p>
+</section>
+
+<section class="form-panel card-surface">
+  <h3 class="panel-title">Create namespace</h3>
+  @if (nsFormError()) {
+    <div class="banner error">{{ nsFormError() }}</div>
+  }
+  @if (nsFormOk()) {
+    <div class="banner ok">{{ nsFormOk() }}</div>
+  }
+  <form class="stack" (ngSubmit)="submitNamespace()">
+    <div class="field-row">
+      <label class="field">
+        <span class="label">Slug</span>
+        <input class="input" name="nsSlug" [(ngModel)]="nsSlugModel" placeholder="e.g. my-team" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="label">Display name</span>
+        <input class="input" name="nsDisplay" [(ngModel)]="nsDisplayName" placeholder="Human-readable name" />
+      </label>
+    </div>
+    <label class="field">
+      <span class="label">Description <span class="optional">(optional)</span></span>
+      <textarea class="input textarea" name="nsDesc" [(ngModel)]="nsDescription" rows="2"></textarea>
+    </label>
+    <label class="field narrow">
+      <span class="label">Visibility</span>
+      <select class="input" name="nsVis" [(ngModel)]="nsVisibility">
+        <option value="Private">Private</option>
+        <option value="OrgVisible">Org visible</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button type="submit" class="btn-primary" [disabled]="nsBusy()">
+        {{ nsBusy() ? 'Creating…' : 'Create namespace' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+@if (loading()) {
+  <div class="state muted">Loading namespaces…</div>
+} @else if (error()) {
+  <div class="state error">{{ error() }}</div>
+} @else if (namespaces().length === 0) {
+  <div class="state muted">No namespaces yet — use the form above to create your first one.</div>
+} @else {
+  <ul class="grid">
+    @for (ns of namespaces(); track ns.id) {
+      <li class="card-surface package-card animate-slide-up">
+        <a class="card-link" [routerLink]="['/ns', ns.slug]">
+          <div class="slug gradient-text">{{ ns.slug }}</div>
+          <div class="title">{{ ns.displayName }}</div>
+          @if (ns.description) {
+            <p class="desc">{{ ns.description }}</p>
+          }
+          <div class="meta">
+            <span class="pill">{{ ns.visibility }}</span>
+            <span class="date">{{ ns.createdAtUtc | date: 'mediumDate' }}</span>
+          </div>
+          <span class="chevron">Open →</span>
+        </a>
+      </li>
+    }
+  </ul>
+}

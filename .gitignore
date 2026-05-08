@@ -1,0 +1,11 @@
+backend/**/bin/
+backend/**/obj/
+**/node_modules/
+frontend/dist/
+frontend/.angular/
+*.user
+*.suo
+.idea/
+.vs/
+.env
+.env.*

@@ -1,0 +1,260 @@
+<div class="toolbar">
+  <a routerLink="/" class="back-link">← Namespaces</a>
+</div>
+
+<section class="hero card-surface">
+  <div class="slug gradient-text">{{ nsSlug() }}</div>
+  <h2 class="hero-title">Skills &amp; versions</h2>
+  <p class="hero-copy">
+    Upload a ZIP to store the skill in this registry. For those versions, use <strong>View in manager</strong> to open
+    <code>SKILL.md</code> inside this app and copy instructions into Cursor or another agent. Versions published with only a
+    remote URL have no ZIP here, so preview is unavailable until you upload one.
+  </p>
+</section>
+
+@if (loading()) {
+  <div class="state muted">Loading packages…</div>
+} @else if (pageError()) {
+  <div class="state error">{{ pageError() }}</div>
+} @else {
+  <section class="form-panel card-surface">
+    <h3 class="panel-title">New skill package</h3>
+    @if (pkgErr()) {
+      <div class="banner error">{{ pkgErr() }}</div>
+    }
+    <form class="stack" (ngSubmit)="submitPackage()">
+      <div class="field-row">
+        <label class="field">
+          <span class="label">Skill slug</span>
+          <input class="input" name="pkgSlug" [(ngModel)]="pkgSlug" placeholder="e.g. email-parser" />
+        </label>
+        <label class="field">
+          <span class="label">Title</span>
+          <input class="input" name="pkgTitle" [(ngModel)]="pkgTitle" placeholder="Short title" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="label">Description <span class="optional">(optional)</span></span>
+        <textarea class="input textarea" name="pkgDesc" [(ngModel)]="pkgDescription" rows="2"></textarea>
+      </label>
+      <div class="actions">
+        <button type="submit" class="btn-primary" [disabled]="pkgBusy()">
+          {{ pkgBusy() ? 'Creating…' : 'Create skill' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  @if (packages().length === 0) {
+    <div class="state muted">No skills in this namespace yet — use the form above.</div>
+  } @else {
+    <ul class="pkg-list">
+      @for (pkg of packages(); track pkg.id) {
+        <li class="pkg-row card-surface">
+          <div class="pkg-head">
+            <div>
+              <div class="skill-slug gradient-text">{{ pkg.slug }}</div>
+              <div class="skill-title">{{ pkg.title }}</div>
+              @if (pkg.description) {
+                <p class="skill-desc">{{ pkg.description }}</p>
+              }
+              <div class="meta">
+                @if (pkg.hasLatest && pkg.latestVersion) {
+                  <span class="pill">latest {{ pkg.latestVersion }}</span>
+                } @else {
+                  <span class="pill muted-pill">no version yet</span>
+                }
+              </div>
+            </div>
+            <button type="button" class="btn-ghost" (click)="toggleVersions(pkg.slug)">
+              {{ isExpanded(pkg.slug) ? 'Hide versions' : 'Versions & publish' }}
+            </button>
+          </div>
+
+          @if (isExpanded(pkg.slug)) {
+            <div class="pkg-body">
+              @if (versionsLoading[pkg.slug]) {
+                <p class="muted">Loading versions…</p>
+              } @else if (versionsErr[pkg.slug]) {
+                <div class="banner error">{{ versionsErr[pkg.slug] }}</div>
+              } @else if (versionsFor(pkg.slug).length === 0) {
+                <p class="muted">No versions published yet.</p>
+              } @else {
+                <ul class="ver-list">
+                  @for (v of versionsFor(pkg.slug); track v.id) {
+                    <li class="ver-row">
+                      <span class="ver-ver">{{ v.version }}</span>
+                      @if (v.tag) {
+                        <span class="pill">{{ v.tag }}</span>
+                      }
+                      @if (v.isLatest) {
+                        <span class="pill latest">latest</span>
+                      }
+                      <code class="uri">{{ v.artifactUri }}</code>
+                      <span class="ver-date">{{ v.publishedAtUtc | date: 'short' }}</span>
+                      @if (v.hasStoredZip) {
+                        <button
+                          type="button"
+                          class="btn-ghost btn-compact"
+                          (click)="openSkillInManager(pkg.slug, v.version)"
+                        >
+                          View in manager
+                        </button>
+                      } @else {
+                        <span class="ver-preview-na muted" title="Only versions uploaded as ZIP to this registry can be previewed here."
+                          >—</span
+                        >
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+
+              <div class="publish-box">
+                <h4 class="sub-title">Publish new version</h4>
+                @if (publishErr[pkg.slug]) {
+                  <div class="banner error">{{ publishErr[pkg.slug] }}</div>
+                }
+                <div class="publish-source">
+                  <span class="label">Publish via</span>
+                  <div class="segmented" role="group" [attr.aria-label]="'Publish method for ' + pkg.slug">
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.segment-active]="publishSource(pkg.slug) === 'zip'"
+                      (click)="setPublishSource(pkg.slug, 'zip')"
+                    >
+                      Upload ZIP
+                    </button>
+                    <button
+                      type="button"
+                      class="segment-btn"
+                      [class.segment-active]="publishSource(pkg.slug) === 'uri'"
+                      (click)="setPublishSource(pkg.slug, 'uri')"
+                    >
+                      Remote URI
+                    </button>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <label class="field">
+                    <span class="label">Version</span>
+                    <input
+                      class="input"
+                      [attr.name]="'pv-' + pkg.slug + '-ver'"
+                      [(ngModel)]="getDraft(pkg.slug).version"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="label">Tag <span class="optional">(optional)</span></span>
+                    <input
+                      class="input"
+                      [attr.name]="'pv-' + pkg.slug + '-tag'"
+                      [(ngModel)]="getDraft(pkg.slug).tag"
+                      placeholder="stable, beta…"
+                    />
+                  </label>
+                </div>
+                @if (publishSource(pkg.slug) === 'zip') {
+                  <label class="field">
+                    <span class="label">Skill package (.zip)</span>
+                    <input
+                      type="file"
+                      accept=".zip,application/zip"
+                      class="input file-input"
+                      [attr.data-skill-zip]="pkg.slug"
+                      [attr.name]="'pv-' + pkg.slug + '-zip'"
+                      (change)="pickPublishZip(pkg.slug, $event)"
+                    />
+                    <span class="file-hint muted">{{ zipLabel(pkg.slug) }}</span>
+                  </label>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      class="btn-primary"
+                      [disabled]="publishBusy[pkg.slug]"
+                      (click)="submitPublishZip(pkg.slug)"
+                    >
+                      {{ publishBusy[pkg.slug] ? 'Publishing…' : 'Publish from ZIP' }}
+                    </button>
+                  </div>
+                } @else {
+                  <label class="field">
+                    <span class="label">Artifact URI</span>
+                    <input
+                      class="input mono"
+                      [attr.name]="'pv-' + pkg.slug + '-uri'"
+                      [(ngModel)]="getDraft(pkg.slug).artifactUri"
+                    />
+                  </label>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      class="btn-primary"
+                      [disabled]="publishBusy[pkg.slug]"
+                      (click)="publishVersion(pkg.slug)"
+                    >
+                      {{ publishBusy[pkg.slug] ? 'Publishing…' : 'Publish version' }}
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+}
+
+@if (skillMdOpen()) {
+  <div class="modal-root" role="dialog" aria-modal="true" aria-labelledby="skill-md-title">
+    <div class="modal-backdrop" (click)="closeSkillMd()" role="presentation"></div>
+    <div class="modal-panel card-surface">
+      <div class="modal-head">
+        <h3 id="skill-md-title" class="modal-title">Skill in manager</h3>
+        <button type="button" class="btn-ghost btn-compact" (click)="closeSkillMd()">Close</button>
+      </div>
+      @if (skillMdLoading()) {
+        <p class="muted">Loading SKILL.md…</p>
+      } @else if (skillMdErr()) {
+        <div class="banner error">{{ skillMdErr() }}</div>
+        <div class="modal-actions">
+          <button type="button" class="btn-primary" (click)="closeSkillMd()">OK</button>
+        </div>
+      } @else if (skillMdView()) {
+        <p class="muted modal-meta">{{ skillMdView()!.skillSlug }} · {{ skillMdView()!.version }}</p>
+        <div class="install-cli-block">
+          <span class="label">Install locally (full tree → ~/.agents/skills)</span>
+          <pre class="cli-snippet">{{ cliInstallFromRepo(skillMdView()!.skillSlug, skillMdView()!.version) }}</pre>
+          <div class="modal-actions tight">
+            <button
+              type="button"
+              class="btn-ghost btn-compact"
+              (click)="copyText(cliInstallFromRepo(skillMdView()!.skillSlug, skillMdView()!.version))"
+            >
+              Copy (from repo)
+            </button>
+            <button
+              type="button"
+              class="btn-ghost btn-compact"
+              (click)="copyText(cliInstallGlobal(skillMdView()!.skillSlug, skillMdView()!.version))"
+            >
+              Copy (global CLI)
+            </button>
+          </div>
+          <p class="muted cli-hint">
+            Run the first command from the <strong>git clone root</strong> (it runs <code>cd cli</code>). For the second,
+            install once: <code>npm install -g ./cli</code> from that repo. Set <code>cliRegistryUrl</code> in
+            <code>frontend/src/environments/environment.ts</code> if your API is not on localhost:5289. Use
+            <code>--dir ~/.cursor/skills</code> or <code>--dir ~/.cline/skills</code> if you target another tool’s folder.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-primary" (click)="copySkillMd(skillMdView()!.body)">Copy SKILL.md</button>
+        </div>
+        <pre class="skill-md-body">{{ skillMdView()!.body }}</pre>
+      }
+    </div>
+  </div>
+}

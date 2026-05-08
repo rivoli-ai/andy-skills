@@ -1,0 +1,39 @@
+<div class="shell">
+  <aside class="sidebar glass">
+    <div class="brand">
+      <span class="brand-mark gradient-text">Skill Registry</span>
+      <p class="brand-tag">Enterprise skill hub</p>
+    </div>
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Namespaces</a>
+    </nav>
+  </aside>
+
+  <div class="content-column">
+    <header class="header glass">
+      <div class="header-inner">
+        <h1 class="page-title">Registry</h1>
+        <div class="header-actions">
+          <label class="dev-id">
+            <span class="dev-id-label">Dev user</span>
+            <input
+              type="text"
+              class="dev-id-input"
+              placeholder="optional"
+              [value]="devUserId()"
+              (input)="onDevUserInput($event)"
+              (blur)="persistDevUser()"
+            />
+          </label>
+          <button type="button" class="theme-toggle" (click)="toggleTheme()" aria-label="Toggle theme">
+            {{ theme.theme() === 'dark' ? 'Light' : 'Dark' }} mode
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content animate-fade-in">
+      <router-outlet />
+    </main>
+  </div>
+</div>
