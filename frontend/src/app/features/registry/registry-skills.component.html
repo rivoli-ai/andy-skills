@@ -1,0 +1,490 @@
+<div class="repositories-container skills-page">
+  @if (!loading() && !error() && groups().length > 0) {
+    <div class="skills-page__sticky">
+      <div class="skills-page__sticky-stack">
+        <div class="skills-page__actions-row">
+          <a
+            class="skills-page__new-skill action-btn primary"
+            routerLink="/skills/new"
+            [queryParams]="newSkillQueryParams()"
+            aria-label="New skill"
+            title="Create a new skill"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>New skill</span>
+          </a>
+        </div>
+        <div class="skills-controls card-surface">
+        <div class="skills-controls__row" role="toolbar" aria-label="Skills filters and layout">
+          <div class="search-input-wrapper skills-controls__search">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search…"
+              [value]="filterQuery()"
+              (input)="onSearchInput(($any($event.target).value))"
+              autocomplete="off"
+              aria-label="Search skills, slugs, namespaces"
+            />
+            @if (filterQuery()) {
+              <button type="button" class="search-clear" (click)="clearSearch()" title="Clear search" aria-label="Clear search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            }
+          </div>
+
+          <select
+            class="skills-controls__select skills-controls__select--ns"
+            [value]="selectedNamespaceSlug()"
+            (change)="onNamespaceFilterChange(($any($event.target).value))"
+            aria-label="Namespace"
+          >
+            <option value="">All namespaces</option>
+            @for (g of namespaceOptions(); track g.namespace.id) {
+              <option [value]="g.namespace.slug">{{ g.namespace.displayName }}</option>
+            }
+          </select>
+
+          <select
+            class="skills-controls__select skills-controls__select--vis"
+            [value]="visibilityFilter()"
+            (change)="onVisibilityChange(($any($event.target).value))"
+            aria-label="Visibility"
+          >
+            <option value="all">All visibility</option>
+            @for (v of visibilityOptions(); track v) {
+              <option [value]="v">{{ filterShort(v) }}</option>
+            }
+          </select>
+
+          <div class="skills-controls__sort-wrap">
+            <select
+              id="skills-sort"
+              class="skills-controls__select skills-controls__select--sort"
+              [value]="sortBy()"
+              (change)="onSortFieldChange(($any($event.target).value))"
+              aria-label="Sort by"
+            >
+              <option value="title">Title</option>
+              <option value="slug">Slug</option>
+              <option value="createdAt">Created</option>
+              <option value="latestVersion">Version</option>
+            </select>
+            <button
+              type="button"
+              class="skills-controls__sort-dir"
+              (click)="toggleSortOrder()"
+              [title]="sortOrder() === 'asc' ? 'Ascending' : 'Descending'"
+              [attr.aria-label]="sortOrder() === 'asc' ? 'Sort ascending' : 'Sort descending'"
+            >
+              <svg class="skills-controls__sort-icon" [class.skills-controls__sort-icon--flip]="sortOrder() === 'desc'" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="skills-controls__segment" role="group" aria-label="View mode">
+            <button
+              type="button"
+              class="skills-controls__segment-btn"
+              [class.skills-controls__segment-btn--active]="viewMode() === 'grid'"
+              (click)="setViewMode('grid')"
+              title="Grid view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="skills-controls__segment-btn"
+              [class.skills-controls__segment-btn--active]="viewMode() === 'list'"
+              (click)="setViewMode('list')"
+              title="List view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="skills-controls__group-toggle"
+            [class.skills-controls__group-toggle--on]="groupByNamespace()"
+            (click)="toggleGrouping()"
+            title="Group skills by namespace"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <span class="skills-controls__group-toggle-text">Group</span>
+          </button>
+
+          <div class="skills-controls__stats-inline" aria-live="polite">
+            <span class="skills-controls__stat">{{ filteredSkillCount() }} {{ filteredSkillCount() === 1 ? 'skill' : 'skills' }}</span>
+            @if (groupByNamespace()) {
+              <span class="skills-controls__stat-sep" aria-hidden="true">·</span>
+              <span class="skills-controls__stat">{{ processedGroups().length }} {{ processedGroups().length === 1 ? 'section' : 'sections' }}</span>
+            }
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="skills-page__scroll">
+    @if (loading()) {
+      <div class="status-message loading">
+        <svg class="animate-pulse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+        <span>Loading skills…</span>
+      </div>
+    }
+
+    @if (!loading() && error()) {
+      <div class="status-message error">
+        <span>{{ error() }}</span>
+        <button type="button" class="retry-btn" (click)="reload()">Retry</button>
+      </div>
+    }
+
+    @if (!loading() && !error() && groups().length === 0) {
+      <div class="empty-message">
+        <div class="empty-message-icon-wrap">
+          <svg class="empty-message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+          </svg>
+        </div>
+        <p class="empty-message-title">No namespaces yet</p>
+        <p class="empty-message-copy">Namespaces live on the home screen. Create one there, then publish skills.</p>
+        <a routerLink="/" class="action-btn primary">
+          <span>Browse namespaces</span>
+        </a>
+      </div>
+    }
+
+    @if (!loading() && !error() && groups().length > 0 && filteredSkillCount() === 0) {
+      <div class="filter-empty-message">
+        <svg class="filter-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <p>No skills match the current filters or search. Adjust filters or clear search.</p>
+      </div>
+    }
+
+    <!-- Grouped display -->
+    @if (!loading() && !error() && groups().length > 0 && filteredSkillCount() > 0 && groupByNamespace()) {
+      <div class="skills-groups">
+        @for (g of processedGroups(); track g.namespace.id) {
+          <section class="skills-group" [attr.aria-labelledby]="'nsk-' + g.namespace.id">
+            <div class="skills-group__header card-surface">
+              <div class="skills-group__header-main">
+                <span
+                  class="skills-group__dot"
+                  [style.background-color]="'hsl(' + namespaceHue(g.namespace.slug) + ', 58%, 52%)'"
+                  aria-hidden="true"
+                ></span>
+                <div class="skills-group__titles">
+                  <div class="skills-group__title-line">
+                    <h2 class="skills-group__title" [id]="'nsk-' + g.namespace.id">
+                      <a [routerLink]="['/ns', g.namespace.slug]" class="skills-group__title-link">{{ g.namespace.displayName }}</a>
+                    </h2>
+                    <span class="skills-group__sep" aria-hidden="true">·</span>
+                    <span class="skills-group__slug mono">{{ g.namespace.slug }}</span>
+                    <span class="skills-group__sep" aria-hidden="true">·</span>
+                    <span class="skills-group__created">
+                      Created {{ g.namespace.createdAtUtc | date: 'mediumDate' }}
+                      @if (g.namespace.createdBySubject?.trim()) {
+                        <span> · {{ g.namespace.createdBySubject }}</span>
+                      }
+                    </span>
+                  </div>
+                </div>
+                <span class="skills-group__count">{{ g.packages.length }}</span>
+              </div>
+              <div class="skills-group__header-actions">
+                <a [routerLink]="['/ns', g.namespace.slug]" class="skills-group__link-ns">Namespace</a>
+                <button
+                  type="button"
+                  class="skills-group__collapse"
+                  (click)="toggleGroupCollapse(g.namespace.id)"
+                  [attr.aria-expanded]="!isCollapsed(g.namespace.id)"
+                  [attr.aria-controls]="'ns-panel-' + g.namespace.id"
+                  title="Collapse or expand group"
+                >
+                  <svg class="skills-group__chevron" [class.skills-group__chevron--collapsed]="isCollapsed(g.namespace.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            @if (!isCollapsed(g.namespace.id)) {
+              <div class="skills-group__body" [id]="'ns-panel-' + g.namespace.id">
+                @if (g.packages.length === 0) {
+                  <p class="skills-group__empty">No skills in this namespace yet.</p>
+                } @else if (viewMode() === 'grid') {
+                  <div class="skills-grid">
+                    @for (pkg of g.packages; track pkg.id) {
+                      <a [routerLink]="['/skills', g.namespace.slug, pkg.slug]" class="skill-card card-surface">
+                        <div class="skill-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                        </div>
+                        <div class="skill-card__body">
+                          <h3 class="skill-card__title">{{ pkg.title }}</h3>
+                          @if (pkg.description?.trim()) {
+                            <p class="skill-card__desc">{{ pkg.description }}</p>
+                          }
+                          <p class="skill-card__created">
+                            Created {{ pkg.createdAtUtc | date: 'mediumDate' }}
+                            @if (pkg.createdBySubject?.trim()) {
+                              <span> · {{ pkg.createdBySubject }}</span>
+                            }
+                          </p>
+                          <div class="skill-card__meta">
+                            <code class="skill-card__slug">{{ pkg.slug }}</code>
+                            @if (pkg.latestVersion) {
+                              <span class="skill-card__ver">{{ pkg.latestVersion }}</span>
+                            }
+                          </div>
+                        </div>
+                      </a>
+                    }
+                  </div>
+                } @else {
+                  <div class="skills-table-panel card-surface skills-table-panel--nested">
+                    <div class="skills-table-scroll">
+                      <table class="skills-table">
+                        <thead>
+                          <tr>
+                            <th scope="col" class="skills-table__col-skill">Skill</th>
+                            <th scope="col" class="skills-table__col-slug">Slug</th>
+                            <th scope="col" class="skills-table__col-created">Created</th>
+                            <th scope="col" class="skills-table__col-ver">Latest</th>
+                            <th scope="col" class="skills-table__col-action"><span class="visually-hidden">Actions</span></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (pkg of g.packages; track pkg.id) {
+                            <tr class="skills-table__data-row">
+                              <td class="skills-table__cell-skill">
+                                <a
+                                  [routerLink]="['/skills', g.namespace.slug, pkg.slug]"
+                                  class="skills-table__skill-link"
+                                  [attr.title]="pkg.description?.trim() || null"
+                                >
+                                  <span class="skills-table__skill-title">{{ pkg.title }}</span>
+                                </a>
+                              </td>
+                              <td class="skills-table__cell-slug"><code class="skills-table__code">{{ pkg.slug }}</code></td>
+                              <td class="skills-table__cell-created">
+                                <span class="skills-table__created-date">{{ pkg.createdAtUtc | date: 'mediumDate' }}</span>
+                                @if (pkg.createdBySubject?.trim()) {
+                                  <span class="skills-table__created-by">{{ pkg.createdBySubject }}</span>
+                                }
+                              </td>
+                              <td class="skills-table__cell-ver">
+                                @if (pkg.latestVersion) {
+                                  <span class="skills-table__ver-pill">{{ pkg.latestVersion }}</span>
+                                } @else {
+                                  <span class="skills-table__ver-muted">—</span>
+                                }
+                              </td>
+                              <td class="skills-table__cell-action">
+                                <div class="skills-table__row-actions">
+                                  <a
+                                    [routerLink]="['/skills', g.namespace.slug, pkg.slug]"
+                                    class="skills-table__icon-btn"
+                                    title="View skill"
+                                    aria-label="View skill">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                      <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                  </a>
+                                  <a
+                                    [routerLink]="['/skills', g.namespace.slug, pkg.slug, 'edit']"
+                                    class="skills-table__icon-btn"
+                                    title="Edit skill"
+                                    aria-label="Edit skill">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                  </a>
+                                  <button
+                                    type="button"
+                                    class="skills-table__icon-btn skills-table__icon-btn--danger"
+                                    title="Delete skill"
+                                    aria-label="Delete skill"
+                                    [disabled]="deleteBusyId() !== null"
+                                    (click)="confirmDeleteSkill(g.namespace.slug, pkg)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                      <line x1="10" y1="11" x2="10" y2="17" />
+                                      <line x1="14" y1="11" x2="14" y2="17" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+    }
+
+    <!-- Flat display -->
+    @if (!loading() && !error() && groups().length > 0 && filteredSkillCount() > 0 && !groupByNamespace()) {
+      @if (viewMode() === 'grid') {
+        <div class="skills-grid">
+          @for (row of flatSkills(); track row.pkg.id + '-' + row.namespace.id) {
+            <a [routerLink]="['/skills', row.namespace.slug, row.pkg.slug]" class="skill-card card-surface">
+              <div class="skill-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div class="skill-card__body">
+                <p class="skill-card__ns">{{ row.namespace.displayName }}</p>
+                <h3 class="skill-card__title">{{ row.pkg.title }}</h3>
+                @if (row.pkg.description?.trim()) {
+                  <p class="skill-card__desc">{{ row.pkg.description }}</p>
+                }
+                <p class="skill-card__created">
+                  Created {{ row.pkg.createdAtUtc | date: 'mediumDate' }}
+                  @if (row.pkg.createdBySubject?.trim()) {
+                    <span> · {{ row.pkg.createdBySubject }}</span>
+                  }
+                </p>
+                <div class="skill-card__meta">
+                  <code class="skill-card__slug">{{ row.pkg.slug }}</code>
+                  @if (row.pkg.latestVersion) {
+                    <span class="skill-card__ver">{{ row.pkg.latestVersion }}</span>
+                  }
+                </div>
+              </div>
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="skills-table-panel card-surface">
+          <div class="skills-table-scroll">
+            <table class="skills-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="skills-table__col-ns">Namespace</th>
+                  <th scope="col" class="skills-table__col-skill">Skill</th>
+                  <th scope="col" class="skills-table__col-slug">Slug</th>
+                  <th scope="col" class="skills-table__col-created">Created</th>
+                  <th scope="col" class="skills-table__col-ver">Latest</th>
+                  <th scope="col" class="skills-table__col-action"><span class="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of flatSkills(); track row.pkg.id + '-' + row.namespace.id) {
+                  <tr class="skills-table__data-row">
+                    <td class="skills-table__cell-ns">
+                      <div class="skills-table__ns-inline">
+                        <a [routerLink]="['/ns', row.namespace.slug]" class="skills-table__ns-link">{{ row.namespace.displayName }}</a>
+                        <span class="skills-table__ns-sep" aria-hidden="true">·</span>
+                        <code class="skills-table__ns-slug mono">{{ row.namespace.slug }}</code>
+                      </div>
+                    </td>
+                    <td class="skills-table__cell-skill">
+                      <a
+                        [routerLink]="['/skills', row.namespace.slug, row.pkg.slug]"
+                        class="skills-table__skill-link"
+                        [attr.title]="row.pkg.description?.trim() || null"
+                      >
+                        <span class="skills-table__skill-title">{{ row.pkg.title }}</span>
+                      </a>
+                    </td>
+                    <td class="skills-table__cell-slug"><code class="skills-table__code">{{ row.pkg.slug }}</code></td>
+                    <td class="skills-table__cell-created">
+                      <span class="skills-table__created-date">{{ row.pkg.createdAtUtc | date: 'mediumDate' }}</span>
+                      @if (row.pkg.createdBySubject?.trim()) {
+                        <span class="skills-table__created-by">{{ row.pkg.createdBySubject }}</span>
+                      }
+                    </td>
+                    <td class="skills-table__cell-ver">
+                      @if (row.pkg.latestVersion) {
+                        <span class="skills-table__ver-pill">{{ row.pkg.latestVersion }}</span>
+                      } @else {
+                        <span class="skills-table__ver-muted">—</span>
+                      }
+                    </td>
+                    <td class="skills-table__cell-action">
+                      <div class="skills-table__row-actions">
+                        <a
+                          [routerLink]="['/skills', row.namespace.slug, row.pkg.slug]"
+                          class="skills-table__icon-btn"
+                          title="View skill"
+                          aria-label="View skill">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </a>
+                        <a
+                          [routerLink]="['/skills', row.namespace.slug, row.pkg.slug, 'edit']"
+                          class="skills-table__icon-btn"
+                          title="Edit skill"
+                          aria-label="Edit skill">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </a>
+                        <button
+                          type="button"
+                          class="skills-table__icon-btn skills-table__icon-btn--danger"
+                          title="Delete skill"
+                          aria-label="Delete skill"
+                          [disabled]="deleteBusyId() !== null"
+                          (click)="confirmDeleteSkill(row.namespace.slug, row.pkg)">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

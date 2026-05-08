@@ -1,0 +1,533 @@
+<div
+  class="skill-detail"
+  [class.skill-detail--browse]="activeTab() === 'overview'"
+  [class.skill-detail--readme]="activeTab() === 'readme'"
+  [class.skill-detail--stretch-tab]="activeTab() === 'overview' || activeTab() === 'versions'"
+>
+  <nav class="toolbar toolbar--skill-detail" aria-label="Skill navigation">
+    <a [routerLink]="skillBackRouterLink()" class="back-link">{{ skillBackLabel() }}</a>
+  </nav>
+
+  @if (loading()) {
+    <div class="state muted">Loading skill…</div>
+  } @else if (pageError()) {
+    <div class="state error">{{ pageError() }}</div>
+    <div class="state-actions">
+      <a [routerLink]="skillBackRouterLink()" class="btn-secondary-inline">{{ skillBackLabel() }}</a>
+    </div>
+  } @else if (pkg()) {
+    <h1 class="visually-hidden">{{ pkg()!.title }}</h1>
+    <p class="skill-detail-created">
+      Created {{ pkg()!.createdAtUtc | date: 'mediumDate' }}
+      @if (pkg()!.createdBySubject?.trim()) {
+        <span> · {{ pkg()!.createdBySubject }}</span>
+      }
+    </p>
+    <div class="skill-tabs card-surface" role="tablist" aria-label="Skill sections">
+      <button
+        type="button"
+        class="tab-btn"
+        role="tab"
+        title="Install instructions"
+        [attr.aria-selected]="activeTab() === 'readme'"
+        [class.active]="activeTab() === 'readme'"
+        (click)="setTab('readme')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+        <span class="tab-label tab-label-static">Readme</span>
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        role="tab"
+        title="Browse package files"
+        [attr.aria-selected]="activeTab() === 'overview'"
+        [class.active]="activeTab() === 'overview'"
+        (click)="setTab('overview')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+        <span class="tab-label tab-label-static">Overview</span>
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        role="tab"
+        title="Versions and publishing"
+        [attr.aria-selected]="activeTab() === 'versions'"
+        [class.active]="activeTab() === 'versions'"
+        (click)="setTab('versions')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+        <span class="tab-label tab-label-static">Versions</span>
+      </button>
+    </div>
+
+    <section class="skill-tab-panel card-surface">
+      @if (activeTab() === 'readme') {
+        <div class="tab-panel readme-panel">
+          <h2 class="panel-heading">Install with <code class="inline-code">andy-skill</code></h2>
+          <p class="panel-lead">
+            Install the CLI, then pick a version and copy the install command. Versions published from a ZIP or from a URL both install through this registry (the server stores the package bytes).
+          </p>
+          @if (versions().length > 0) {
+            <label class="field overview-version-field">
+              <span class="label" id="readme-version-label">Version</span>
+              <app-custom-select
+                ariaLabelledBy="readme-version-label"
+                listboxId="readme-version-listbox"
+                placeholder="Choose version"
+                [options]="readmeVersionSelectOptions()"
+                [value]="readmeVersion()"
+                (valueChange)="onReadmeVersionChange($event)"
+              />
+            </label>
+          }
+
+          <div class="install-cli-block">
+            <span class="label">Install the CLI globally</span>
+            <pre class="cli-snippet">npm i -g &#64;andy-cli/cli</pre>
+            <button type="button" class="btn-ghost btn-compact" (click)="copyText('npm i -g @andy-cli/cli')">
+              Copy
+            </button>
+          </div>
+
+          <div class="install-cli-block">
+            <span class="label">Install this skill</span>
+            <pre class="cli-snippet">{{ cliInstallGlobal(readmeVersion()) }}</pre>
+            <button type="button" class="btn-ghost btn-compact" (click)="copyText(cliInstallGlobal(readmeVersion()))">
+              Copy
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (activeTab() === 'overview') {
+        <div class="tab-panel overview-panel">
+          <h2 class="panel-heading visually-hidden">Package explorer</h2>
+          @if (versionsWithZip().length === 0) {
+            <p class="muted">
+              No versions with a stored ZIP yet. Publish from ZIP on the Versions tab to browse files here.
+            </p>
+          } @else {
+            <label class="field overview-version-field">
+              <span class="label" id="overview-package-version-label">Package version (ZIP in registry)</span>
+              <app-custom-select
+                ariaLabelledBy="overview-package-version-label"
+                listboxId="overview-package-version-listbox"
+                placeholder="Choose version"
+                [options]="overviewPackageSelectOptions()"
+                [value]="overviewVersion()"
+                (valueChange)="onOverviewVersionChange($event)"
+              />
+            </label>
+
+            @if (overviewTreeErr()) {
+              <div class="banner error">{{ overviewTreeErr() }}</div>
+            }
+
+            <div
+              class="overview-split"
+              [class.overview-split--mobile-explorer]="overviewMobilePane() === 'explorer'"
+              [class.overview-split--mobile-code]="overviewMobilePane() === 'code'"
+            >
+              <div class="overview-mobile-switch" role="tablist" aria-label="Explorer and file">
+                <button
+                  type="button"
+                  class="overview-mobile-switch-btn"
+                  role="tab"
+                  [attr.aria-selected]="overviewMobilePane() === 'explorer'"
+                  (click)="setOverviewMobilePane('explorer')"
+                >
+                  Explorer
+                </button>
+                <button
+                  type="button"
+                  class="overview-mobile-switch-btn"
+                  role="tab"
+                  [attr.aria-selected]="overviewMobilePane() === 'code'"
+                  (click)="setOverviewMobilePane('code')"
+                >
+                  File
+                </button>
+              </div>
+
+              <div class="overview-explorer">
+                <div class="overview-explorer-head">
+                  <span class="tree-title">Explorer</span>
+                  @if (overviewTreeLoading()) {
+                    <span class="muted overview-explorer-loading">Loading…</span>
+                  }
+                </div>
+                <div class="overview-tree-scroll tree-content">
+                  @if (!overviewTreeLoading() && overviewRows().length === 0 && !overviewTreeErr()) {
+                    <p class="muted overview-tree-empty">No files in this archive.</p>
+                  }
+                  <div class="tree-items">
+                    @for (row of overviewRows(); track row.path + row.kind) {
+                      <div class="tree-node-row" [style.padding-left.px]="12 + row.depth * 16">
+                        @if (row.kind === 'dir') {
+                          <button type="button" class="tree-node directory" (click)="toggleOverviewDir(row.path)">
+                            <span class="chevron" [class.expanded]="overviewDirExpanded(row.path)" aria-hidden="true">
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <path d="M9 18l6-6-6-6" />
+                              </svg>
+                            </span>
+                            <span class="node-icon" aria-hidden="true">
+                              @if (overviewDirExpanded(row.path)) {
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                  <path
+                                    d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2z"
+                                  />
+                                </svg>
+                              } @else {
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+                                </svg>
+                              }
+                            </span>
+                            <span class="node-name">{{ row.name }}</span>
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="tree-node file"
+                            [class.selected]="overviewRowSelected(row.path)"
+                            (click)="selectOverviewFile(row.path)"
+                          >
+                            <span class="chevron-spacer" aria-hidden="true"></span>
+                            <span class="node-icon" [attr.data-type]="overviewExplorerIconType(row.name)" aria-hidden="true">
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                            </span>
+                            <span class="node-name">{{ row.name }}</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="overview-viewer">
+                @if (overviewFileLoading()) {
+                  <div class="overview-viewer-placeholder">
+                    <div class="loading-spinner small" aria-hidden="true"></div>
+                    <span class="muted">Loading file…</span>
+                  </div>
+                } @else if (overviewFileErr()) {
+                  <div class="banner error">{{ overviewFileErr() }}</div>
+                } @else if (!overviewSelectedPath()) {
+                  <div class="overview-viewer-placeholder">
+                    <p class="muted">Select a file in the explorer to view its contents.</p>
+                  </div>
+                } @else if (overviewFileBinary()) {
+                  <div class="overview-viewer-head">
+                    <span class="overview-viewer-path">{{ overviewSelectedPath() }}</span>
+                    <button type="button" class="btn-ghost btn-compact" (click)="closeOverviewFile()">Close</button>
+                  </div>
+                  <div class="binary-notice">
+                    <p>Binary file — preview not available.</p>
+                    <p class="muted">{{ formatOverviewSize(overviewFileBytes()) }}</p>
+                  </div>
+                } @else {
+                  <div class="overview-viewer-head">
+                    <div class="overview-viewer-meta">
+                      <span class="overview-viewer-name">{{ overviewSelectedPath() }}</span>
+                      <span class="muted">{{ formatOverviewSize(overviewFileBytes()) }}</span>
+                      @if (overviewFileTruncated()) {
+                        <span class="pill muted-pill">truncated preview</span>
+                      }
+                    </div>
+                    <button type="button" class="btn-ghost btn-compact" (click)="closeOverviewFile()">Close</button>
+                  </div>
+                  <div class="overview-code-viewer">
+                    <div class="overview-code-toolbar">
+                      <span class="overview-code-lang">{{ overviewLanguageLabel(overviewSelectedPath()) }}</span>
+                      <button
+                        type="button"
+                        class="overview-copy-btn"
+                        (click)="copyText(overviewFileContent() ?? '')"
+                        title="Copy to clipboard"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy
+                      </button>
+                    </div>
+                    @if (overviewViewerIsMarkdown()) {
+                      <div class="overview-markdown-scroll markdown-preview-scroll">
+                        <article
+                          class="markdown-content file-markdown-body"
+                          [innerHTML]="overviewFileContent() | skillMarkdown"
+                        ></article>
+                      </div>
+                    } @else {
+                      <div class="overview-code-scroll">
+                        <table class="code-lines" aria-label="File contents">
+                          <tbody>
+                            @for (line of overviewFileLines(); track $index) {
+                              <tr class="code-line">
+                                <td class="line-number">{{ $index + 1 }}</td>
+                                <td class="line-content">
+                                  <code class="line-code" [innerHTML]="line | codeHighlight: overviewPrismLanguage()"></code>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (activeTab() === 'versions') {
+        <div class="tab-panel versions-panel">
+          <div class="versions-panel-head">
+            <h2 class="panel-heading">Versions</h2>
+            @if (!publishFormOpen()) {
+              <button type="button" class="btn-primary versions-publish-trigger" (click)="openPublishForm()">
+                Publish a new version
+              </button>
+            } @else {
+              <button type="button" class="btn-ghost btn-compact versions-publish-cancel" (click)="cancelPublishForm()">
+                Cancel
+              </button>
+            }
+          </div>
+          @if (!publishFormOpen()) {
+            <p class="panel-lead versions-panel-lead">
+              Browse releases in Overview; install commands on Readme. URL publish pulls a ZIP once (same storage as upload).
+            </p>
+          }
+
+          @if (publishFormOpen()) {
+            <div class="publish-box publish-box--expanded versions-publish-form">
+              <div class="publish-toolbar-inline">
+                <span class="label publish-toolbar-label">Publish via</span>
+                <div class="segmented" role="group" aria-label="Publish method">
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    [class.segment-active]="publishSourceMode === 'zip'"
+                    (click)="setPublishSource('zip')"
+                  >
+                    Upload ZIP
+                  </button>
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    [class.segment-active]="publishSourceMode === 'uri'"
+                    (click)="setPublishSource('uri')"
+                  >
+                    Remote URI
+                  </button>
+                </div>
+              </div>
+              <div class="field-row publish-version-fields">
+                <label class="field">
+                  <span class="label">Version</span>
+                  <input
+                    class="input input--dense"
+                    [class.publish-input-invalid]="publishVersionErr()"
+                    name="pv-ver"
+                    [(ngModel)]="publishDraft.version"
+                    (ngModelChange)="onPublishVersionFieldChange()"
+                  />
+                  @if (publishVersionErr()) {
+                    <span class="publish-field-error publish-field-error--version" role="alert">{{ publishVersionErr() }}</span>
+                  }
+                </label>
+                <label class="field">
+                  <span class="label">Tag <span class="optional">(optional)</span></span>
+                  <input class="input input--dense" name="pv-tag" [(ngModel)]="publishDraft.tag" placeholder="stable, beta…" />
+                </label>
+              </div>
+              @if (publishSourceMode === 'zip') {
+                <div class="zip-import-stack zip-import-stack--compact">
+                  <span class="label zip-import-label" id="zip-import-label">Skill package (.zip)</span>
+                  <div
+                    class="zip-dropzone-shell"
+                    (dragenter)="onPublishZipDragEnter($event)"
+                    (dragleave)="onPublishZipDragLeave($event)"
+                    (dragover)="onPublishZipDragOver($event)"
+                    (drop)="onPublishZipDrop($event)"
+                  >
+                    <div
+                      class="zip-dropzone"
+                      [class.zip-dropzone--drag]="publishZipDragging()"
+                      [class.zip-dropzone--filled]="publishZipFile"
+                      [class.zip-dropzone--invalid]="publishZipErr()"
+                    >
+                      <label class="zip-dropzone-main" for="pv-zip-input">
+                        <input
+                          #publishZipInput
+                          id="pv-zip-input"
+                          type="file"
+                          accept=".zip,application/zip,application/x-zip-compressed"
+                          class="zip-dropzone-input"
+                          data-publish-zip
+                          name="pv-zip"
+                          (change)="pickPublishZip($event)"
+                        />
+                        <span class="zip-dropzone-visual">
+                          <svg class="zip-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                            <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                            <polyline points="7.5 19.79 7.5 14.6 3 12" />
+                            <polyline points="21 12 16.5 14.6 16.5 19.79" />
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                            <line x1="12" y1="22.08" x2="12" y2="12" />
+                          </svg>
+                          <span class="zip-dropzone-lines">
+                            <span class="zip-dropzone-primary">{{ publishZipPrimaryLine() }}</span>
+                            <span class="zip-dropzone-meta">{{ publishZipMetaLine() }}</span>
+                          </span>
+                        </span>
+                      </label>
+                      @if (publishZipFile) {
+                        <button
+                          type="button"
+                          class="zip-remove-inline"
+                          (click)="clearPublishZip($event)"
+                          aria-label="Remove file"
+                          title="Remove file">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  @if (publishZipErr()) {
+                    <span class="publish-field-error" role="alert">{{ publishZipErr() }}</span>
+                  }
+                </div>
+                <div class="actions zip-publish-actions actions--tight">
+                  <button type="button" class="btn-primary" [disabled]="publishBusy()" (click)="submitPublishZip()">
+                    {{ publishBusy() ? 'Publishing…' : 'Publish from ZIP' }}
+                  </button>
+                </div>
+              } @else {
+                <div class="publish-uri-stack">
+                  <label class="field">
+                    <span class="label">Artifact URL</span>
+                    <input
+                      class="input mono input--dense"
+                      [class.publish-input-invalid]="publishUriErr()"
+                      name="pv-uri"
+                      [(ngModel)]="publishDraft.artifactUri"
+                      (ngModelChange)="onPublishUriFieldChange()"
+                      placeholder="GitHub Tree folder link, Azure repo link ?path=/folder, or .zip URL"
+                    />
+                    @if (publishUriErr()) {
+                      <span class="publish-field-error" role="alert">{{ publishUriErr() }}</span>
+                    }
+                  </label>
+                  <label class="field">
+                    <span class="label">Token <span class="optional">(optional)</span></span>
+                    <input
+                      type="password"
+                      class="input mono input--dense"
+                      name="pv-publisher-pat"
+                      autocomplete="new-password"
+                      [(ngModel)]="publishDraft.publisherPatOneTime"
+                      placeholder="PAT for private repo — one-time, not stored"
+                    />
+                  </label>
+                </div>
+                <p class="muted publish-uri-footnote">
+                  GitHub Tree URLs download the branch ZIP and keep only that folder as the package root.
+                  Azure DevOps URLs honor <code>?path=/your-folder</code> on the repo browser link (REST Git Items ZIP) and strip that prefix when needed so skill files land at the archive root.
+                  Registry stores bytes like an upload. Add a PAT for private repos.
+                </p>
+                <div class="actions actions--tight">
+                  <button type="button" class="btn-primary" [disabled]="publishBusy()" (click)="publishVersion()">
+                    {{ publishBusy() ? 'Publishing…' : 'Publish version' }}
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (!publishFormOpen()) {
+            <div class="versions-scroll">
+              @if (versions().length === 0) {
+                <p class="muted">No versions published yet. Click “Publish a new version” to add one.</p>
+              } @else {
+                <ul class="ver-list">
+                  @for (v of versions(); track v.id) {
+                    <li class="ver-row">
+                      <span class="ver-ver">{{ v.version }}</span>
+                      <div class="ver-row-pills">
+                        @if (v.tag) {
+                          <span class="pill">{{ v.tag }}</span>
+                        }
+                        @if (v.isLatest) {
+                          <span class="pill latest">latest</span>
+                        }
+                      </div>
+                      <code class="uri" [title]="v.artifactUri">{{ v.artifactUri }}</code>
+                      <span class="ver-date">{{ v.publishedAtUtc | date: 'short' }}</span>
+                      <div class="ver-row-action">
+                        @if (v.hasStoredZip) {
+                          <button type="button" class="btn-ghost btn-compact" (click)="openOverviewForVersion(v.version, true)">
+                            Browse files
+                          </button>
+                        } @else {
+                          <span class="ver-preview-na muted" title="Only ZIP uploads appear in Overview.">—</span>
+                        }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

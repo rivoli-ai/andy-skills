@@ -1,0 +1,94 @@
+<div class="registry-form-page">
+  <div class="registry-form-back-row">
+    @if (mode() === 'edit') {
+      <a [routerLink]="['/ns', editSlug]" class="registry-form-back">← Back to namespace</a>
+    } @else {
+      <a routerLink="/" class="registry-form-back">← Namespaces</a>
+    }
+  </div>
+
+  <div class="page-header registry-form-header">
+    <div class="header-content">
+      <h1 class="page-title">{{ mode() === 'create' ? 'New namespace' : 'Edit namespace' }}</h1>
+      <p class="page-subtitle">
+        @if (mode() === 'create') {
+          Slug, display name, and visibility for this workspace.
+        } @else {
+          <code class="registry-form-slug-code">{{ editSlug }}</code><span class="registry-form-subtitle-rest"> — slug is fixed.</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (loadingNs()) {
+    <div class="status-message loading">
+      <svg class="animate-pulse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+      <span>Loading namespace…</span>
+    </div>
+  } @else if (pageError()) {
+    <div class="status-message error">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span>{{ pageError() }}</span>
+    </div>
+    <div class="registry-form-actions-top">
+      <a routerLink="/" class="action-btn secondary">Back to namespaces</a>
+    </div>
+  } @else {
+    <div class="registry-form-panel">
+      <form (ngSubmit)="submit()">
+        @if (saveError()) {
+          <div class="registry-form-error">{{ saveError() }}</div>
+        }
+
+        @if (mode() === 'create') {
+          <div class="registry-form-grid">
+            <div class="registry-form-group registry-form-group--compact">
+              <label for="nf-slug">Slug</label>
+              <input id="nf-slug" class="registry-form-input registry-form-input--mono" name="nfSlug" [(ngModel)]="nsSlugModel" autocomplete="off" placeholder="my-team" />
+            </div>
+            <div class="registry-form-group registry-form-group--compact">
+              <label for="nf-display">Display name</label>
+              <input id="nf-display" class="registry-form-input" name="nfDisplay" [(ngModel)]="nsDisplayName" placeholder="Human-readable name" />
+            </div>
+          </div>
+        } @else {
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="nf-slug-ro">Slug</label>
+            <input id="nf-slug-ro" class="registry-form-input registry-form-input--mono input-readonly" type="text" [value]="editSlug" readonly />
+            <p class="field-hint">Slug cannot be changed after creation.</p>
+          </div>
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="nf-display">Display name</label>
+            <input id="nf-display" class="registry-form-input" name="nfDisplay" [(ngModel)]="nsDisplayName" placeholder="Human-readable name" />
+          </div>
+        }
+
+        <div class="registry-form-group registry-form-group--compact">
+          <label for="nf-desc">Description <span class="optional">(optional)</span></label>
+          <textarea id="nf-desc" class="registry-form-textarea" name="nfDesc" [(ngModel)]="nsDescription" rows="3" placeholder="Short summary (optional)"></textarea>
+        </div>
+
+        <div class="registry-form-group registry-form-group--narrow registry-form-group--compact">
+          <label for="nf-vis">Visibility</label>
+          <select id="nf-vis" class="registry-form-select" name="nfVis" [(ngModel)]="nsVisibility">
+            <option value="Private">Private</option>
+            <option value="OrgVisible">Org visible</option>
+          </select>
+        </div>
+
+        <div class="registry-form-footer">
+          <button type="button" class="action-btn secondary" (click)="cancel()" [disabled]="saveBusy()">Cancel</button>
+          <button type="submit" class="action-btn primary" [disabled]="saveBusy()">
+            {{ saveBusy() ? (mode() === 'create' ? 'Creating…' : 'Saving…') : mode() === 'create' ? 'Create namespace' : 'Save changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

@@ -1,0 +1,4 @@
+{
+  "apiUrl": "http://localhost:5289/api",
+  "cliRegistryUrl": "http://localhost:5289"
+}

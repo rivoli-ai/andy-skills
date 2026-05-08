@@ -9,6 +9,11 @@ public sealed class SkillVersion
     public string? Tag { get; set; }
     public bool IsLatest { get; set; }
     public string ArtifactUri { get; set; } = "";
+    /// <summary>
+    /// When true, installers must send their own PAT on each download (<c>X-Artifact-PAT</c>); the registry never stores tokens.
+    /// Ignored when <see cref="PackageZip"/> is stored (ZIP is served from DB).
+    /// </summary>
+    public bool RemoteFetchRequiresPat { get; set; }
     /// <summary>When set, the ZIP is served from the registry DB via the install URL; otherwise clients follow <see cref="ArtifactUri"/> if it is HTTP(S).</summary>
     public byte[]? PackageZip { get; set; }
     public DateTime PublishedAtUtc { get; set; }

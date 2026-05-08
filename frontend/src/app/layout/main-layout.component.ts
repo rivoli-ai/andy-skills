@@ -1,37 +1,40 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { DEV_USER_STORAGE_KEY } from '../core/interceptors/dev-user.interceptor';
+import { RouterOutlet } from '@angular/router';
 import { ThemeService } from '../core/services/theme.service';
+import { RegistryBreadcrumbComponent } from './registry-breadcrumb/registry-breadcrumb.component';
+import { SidebarComponent } from './sidebar/sidebar.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, SidebarComponent, RegistryBreadcrumbComponent],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.css',
 })
 export class MainLayoutComponent implements OnInit {
+  private static readonly SIDEBAR_COLLAPSED_KEY = 'skill-registry-sidebar-collapsed';
+
   readonly theme = inject(ThemeService);
 
-  /** Sent as `X-Dev-User-Id` on API calls until OIDC exists. */
-  readonly devUserId = signal('');
+  readonly sidebarCollapsed = signal(false);
+  readonly sidebarMobileOpen = signal(false);
 
   ngOnInit(): void {
-    this.devUserId.set(localStorage.getItem(DEV_USER_STORAGE_KEY) ?? '');
+    this.sidebarCollapsed.set(localStorage.getItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY) === '1');
   }
 
-  persistDevUser(): void {
-    const v = this.devUserId().trim();
-    if (v) {
-      localStorage.setItem(DEV_USER_STORAGE_KEY, v);
-    } else {
-      localStorage.removeItem(DEV_USER_STORAGE_KEY);
-    }
+  toggleSidebarCollapsed(): void {
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    localStorage.setItem(MainLayoutComponent.SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
   }
 
-  onDevUserInput(ev: Event): void {
-    const el = ev.target as HTMLInputElement | null;
-    this.devUserId.set(el?.value ?? '');
+  toggleMobileSidebar(): void {
+    this.sidebarMobileOpen.update((open) => !open);
+  }
+
+  closeMobileSidebar(): void {
+    this.sidebarMobileOpen.set(false);
   }
 
   toggleTheme(): void {

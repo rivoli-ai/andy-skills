@@ -9,4 +9,5 @@ public sealed record SkillVersionListRow(
     bool IsLatest,
     string ArtifactUri,
     DateTime PublishedAtUtc,
-    bool HasStoredZip);
+    bool HasStoredZip,
+    bool RemoteFetchRequiresPat);

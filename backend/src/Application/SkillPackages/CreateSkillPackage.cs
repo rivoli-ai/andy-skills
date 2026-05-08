@@ -17,8 +17,10 @@ public sealed class CreateSkillPackageCommandHandler(ISkillRegistryPersistence p
 {
     public async Task<PackageSummaryResponse> Handle(CreateSkillPackageCommand request, CancellationToken cancellationToken)
     {
-        var ns = await persistence.GetNamespaceBySlugAsync(request.NamespaceSlug, cancellationToken)
-                 ?? throw new KeyNotFoundException($"Namespace '{request.NamespaceSlug}' was not found.");
+        var actor = string.IsNullOrWhiteSpace(request.ActorSubject) ? "anonymous" : request.ActorSubject.Trim();
+        var nsSlug = SlugRules.NormalizeSlug(request.NamespaceSlug);
+        var ns = await NamespaceMutationGuard.RequireForSkillMutationAsync(persistence, nsSlug, actor, cancellationToken)
+            .ConfigureAwait(false);
 
         var slug = SlugRules.NormalizeSlug(request.Slug);
         if (!SlugRules.IsValidSlug(slug))
@@ -26,8 +28,6 @@ public sealed class CreateSkillPackageCommandHandler(ISkillRegistryPersistence p
 
         if (await persistence.GetPackageAsync(ns.Id, slug, cancellationToken) != null)
             throw new InvalidOperationException($"Skill '{slug}' already exists in this namespace.");
-
-        var actor = string.IsNullOrWhiteSpace(request.ActorSubject) ? "anonymous" : request.ActorSubject.Trim();
 
         var pkg = new SkillPackage
         {
@@ -37,6 +37,7 @@ public sealed class CreateSkillPackageCommandHandler(ISkillRegistryPersistence p
             Title = request.Title.Trim(),
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             CreatedAtUtc = DateTime.UtcNow,
+            CreatedBySubject = actor,
         };
 
         persistence.AddPackage(pkg);
@@ -62,6 +63,7 @@ public sealed class CreateSkillPackageCommandHandler(ISkillRegistryPersistence p
             pkg.Description,
             pkg.CreatedAtUtc,
             null,
-            false);
+            false,
+            pkg.CreatedBySubject);
     }
 }

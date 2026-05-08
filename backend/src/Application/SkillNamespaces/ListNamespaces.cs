@@ -3,7 +3,7 @@ using SkillRegistry.Application.Abstractions;
 
 namespace SkillRegistry.Application.SkillNamespaces;
 
-public sealed record ListNamespacesQuery : IRequest<IReadOnlyList<NamespaceResponse>>;
+public sealed record ListNamespacesQuery(string? ViewerSubject) : IRequest<IReadOnlyList<NamespaceResponse>>;
 
 public sealed record NamespaceResponse(
     Guid Id,
@@ -11,7 +11,8 @@ public sealed record NamespaceResponse(
     string DisplayName,
     string? Description,
     string Visibility,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? CreatedBySubject);
 
 public sealed class ListNamespacesQueryHandler(ISkillRegistryPersistence persistence)
     : IRequestHandler<ListNamespacesQuery, IReadOnlyList<NamespaceResponse>>
@@ -20,16 +21,16 @@ public sealed class ListNamespacesQueryHandler(ISkillRegistryPersistence persist
         ListNamespacesQuery request,
         CancellationToken cancellationToken)
     {
-        var list = await persistence.ListNamespacesAsync(cancellationToken);
+        var list = await persistence.ListNamespacesVisibleAsync(request.ViewerSubject, cancellationToken);
         return list
-            .OrderBy(n => n.Slug)
             .Select(n => new NamespaceResponse(
                 n.Id,
                 n.Slug,
                 n.DisplayName,
                 n.Description,
                 n.Visibility.ToString(),
-                n.CreatedAtUtc))
+                n.CreatedAtUtc,
+                n.CreatedBySubject))
             .ToList();
     }
 }

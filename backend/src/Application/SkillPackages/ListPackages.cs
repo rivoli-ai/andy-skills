@@ -1,9 +1,10 @@
 using MediatR;
 using SkillRegistry.Application.Abstractions;
+using SkillRegistry.Application.Common;
 
 namespace SkillRegistry.Application.SkillPackages;
 
-public sealed record ListPackagesQuery(string NamespaceSlug) : IRequest<IReadOnlyList<PackageSummaryResponse>>;
+public sealed record ListPackagesQuery(string NamespaceSlug, string? ViewerSubject) : IRequest<IReadOnlyList<PackageSummaryResponse>>;
 
 public sealed record PackageSummaryResponse(
     Guid Id,
@@ -13,7 +14,8 @@ public sealed record PackageSummaryResponse(
     string? Description,
     DateTime CreatedAtUtc,
     string? LatestVersion,
-    bool HasLatest);
+    bool HasLatest,
+    string? CreatedBySubject);
 
 public sealed class ListPackagesQueryHandler(ISkillRegistryPersistence persistence)
     : IRequestHandler<ListPackagesQuery, IReadOnlyList<PackageSummaryResponse>>
@@ -22,7 +24,8 @@ public sealed class ListPackagesQueryHandler(ISkillRegistryPersistence persisten
         ListPackagesQuery request,
         CancellationToken cancellationToken)
     {
-        var ns = await persistence.GetNamespaceBySlugAsync(request.NamespaceSlug, cancellationToken)
+        var nsSlug = SlugRules.NormalizeSlug(request.NamespaceSlug);
+        var ns = await persistence.GetNamespaceBySlugForViewerAsync(nsSlug, request.ViewerSubject, cancellationToken)
                  ?? throw new KeyNotFoundException($"Namespace '{request.NamespaceSlug}' was not found.");
 
         var packages = await persistence.ListPackagesAsync(ns.Id, cancellationToken);
@@ -39,7 +42,8 @@ public sealed class ListPackagesQueryHandler(ISkillRegistryPersistence persisten
                 p.Description,
                 p.CreatedAtUtc,
                 latest?.Version,
-                latest != null));
+                latest != null,
+                p.CreatedBySubject));
         }
 
         return results;

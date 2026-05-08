@@ -1,0 +1,41 @@
+<div class="custom-select" [class.custom-select--open]="open()" [class.custom-select--disabled]="disabled()">
+  <button
+    type="button"
+    class="custom-select-trigger"
+    [disabled]="disabled()"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="listbox"
+    [attr.aria-controls]="listboxId()"
+    [attr.aria-labelledby]="ariaLabelledBy() ?? null"
+    [attr.aria-label]="ariaLabelledBy() ? null : placeholder()"
+    (click)="toggle($event)"
+  >
+    <span class="custom-select-value">{{ displayLabel() }}</span>
+    <span class="custom-select-chevron" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </span>
+  </button>
+  @if (open()) {
+    <div
+      class="custom-select-panel"
+      role="listbox"
+      [attr.id]="listboxId()"
+      tabindex="-1"
+    >
+      @for (opt of options(); track opt.value) {
+        <button
+          type="button"
+          role="option"
+          class="custom-select-option"
+          [class.custom-select-option--selected]="opt.value === value()"
+          [attr.aria-selected]="opt.value === value()"
+          (click)="pick(opt.value, $event)"
+        >
+          {{ opt.label }}
+        </button>
+      }
+    </div>
+  }
+</div>

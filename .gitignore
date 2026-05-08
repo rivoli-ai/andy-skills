@@ -9,3 +9,4 @@ frontend/.angular/
 .vs/
 .env
 .env.*
+backend/src/API/appsettings.Development.json

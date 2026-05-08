@@ -21,6 +21,7 @@ public sealed class SkillRegistryDbContext(DbContextOptions<SkillRegistryDbConte
             e.Property(x => x.Slug).HasMaxLength(64).IsRequired();
             e.Property(x => x.DisplayName).HasMaxLength(256).IsRequired();
             e.Property(x => x.Description).HasMaxLength(4000);
+            e.Property(x => x.CreatedBySubject).HasMaxLength(256);
             e.HasIndex(x => x.Slug).IsUnique();
             e.HasMany(x => x.Members).WithOne(x => x.Namespace).HasForeignKey(x => x.NamespaceId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -43,6 +44,7 @@ public sealed class SkillRegistryDbContext(DbContextOptions<SkillRegistryDbConte
             e.Property(x => x.Slug).HasMaxLength(64).IsRequired();
             e.Property(x => x.Title).HasMaxLength(256).IsRequired();
             e.Property(x => x.Description).HasMaxLength(8000);
+            e.Property(x => x.CreatedBySubject).HasMaxLength(256);
             e.HasIndex(x => new { x.NamespaceId, x.Slug }).IsUnique();
             e.HasMany(x => x.Versions).WithOne(x => x.Package).HasForeignKey(x => x.PackageId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -55,6 +57,7 @@ public sealed class SkillRegistryDbContext(DbContextOptions<SkillRegistryDbConte
             e.Property(x => x.Version).HasMaxLength(64).IsRequired();
             e.Property(x => x.Tag).HasMaxLength(64);
             e.Property(x => x.ArtifactUri).HasMaxLength(2048).IsRequired();
+            e.Property(x => x.RemoteFetchRequiresPat).HasDefaultValue(false);
             e.Property(x => x.PackageZip).HasColumnType("bytea");
             e.Property(x => x.PublishedBySubject).HasMaxLength(256);
             e.HasIndex(x => new { x.PackageId, x.Version }).IsUnique();

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SkillRegistry.API;
 using SkillRegistry.Application.Common;
 using SkillRegistry.Application.Options;
 using SkillRegistry.Application.SkillPackages;
@@ -24,7 +25,8 @@ public sealed class PackagesController(
     {
         try
         {
-            var result = await mediator.Send(new ListPackagesQuery(namespaceSlug), cancellationToken)
+            var viewer = RegistryActorResolver.Resolve(httpContextAccessor);
+            var result = await mediator.Send(new ListPackagesQuery(namespaceSlug, viewer), cancellationToken)
                 .ConfigureAwait(false);
             return Ok(result);
         }
@@ -42,8 +44,9 @@ public sealed class PackagesController(
     {
         try
         {
+            var viewer = RegistryActorResolver.Resolve(httpContextAccessor);
             var result = await mediator
-                .Send(new ListSkillVersionsQuery(namespaceSlug, skillSlug), cancellationToken)
+                .Send(new ListSkillVersionsQuery(namespaceSlug, skillSlug, viewer), cancellationToken)
                 .ConfigureAwait(false);
             return Ok(result);
         }
@@ -63,14 +66,65 @@ public sealed class PackagesController(
         string version,
         CancellationToken cancellationToken)
     {
+        var viewer = RegistryActorResolver.Resolve(httpContextAccessor);
         var result = await mediator
-            .Send(new GetSkillMarkdownQuery(namespaceSlug, skillSlug, version), cancellationToken)
+            .Send(new GetSkillMarkdownQuery(namespaceSlug, skillSlug, version, viewer), cancellationToken)
             .ConfigureAwait(false);
 
         return result switch
         {
             SkillMarkdownFound f => Content(f.Markdown, "text/markdown; charset=utf-8"),
             SkillMarkdownNotFound n => NotFound(new { error = n.Reason }),
+            _ => NotFound(),
+        };
+    }
+
+    /// <summary>Lists file paths inside the stored ZIP for Explorer-style browsing.</summary>
+    [HttpGet("{skillSlug}/versions/{version}/zip/tree")]
+    public async Task<IActionResult> GetSkillZipTree(
+        string namespaceSlug,
+        string skillSlug,
+        string version,
+        CancellationToken cancellationToken)
+    {
+        var viewer = RegistryActorResolver.Resolve(httpContextAccessor);
+        var result = await mediator
+            .Send(new GetSkillZipTreeQuery(namespaceSlug, skillSlug, version, viewer), cancellationToken)
+            .ConfigureAwait(false);
+
+        return result switch
+        {
+            SkillZipTreeFound f => Ok(new { paths = f.Paths }),
+            SkillZipTreeNotFound n => NotFound(new { error = n.Reason }),
+            _ => NotFound(),
+        };
+    }
+
+    /// <summary>Reads a text preview (or marks binary) for one path inside the stored ZIP.</summary>
+    [HttpGet("{skillSlug}/versions/{version}/zip/file")]
+    public async Task<IActionResult> GetSkillZipFile(
+        string namespaceSlug,
+        string skillSlug,
+        string version,
+        [FromQuery] string path,
+        CancellationToken cancellationToken)
+    {
+        var viewer = RegistryActorResolver.Resolve(httpContextAccessor);
+        var result = await mediator
+            .Send(new GetSkillZipFileQuery(namespaceSlug, skillSlug, version, path, viewer), cancellationToken)
+            .ConfigureAwait(false);
+
+        return result switch
+        {
+            SkillZipFileFound f => Ok(new
+            {
+                path = f.Path,
+                content = f.ContentUtf8,
+                isBinary = f.IsBinary,
+                sizeBytes = f.SizeBytes,
+                truncated = f.SizeBytes > SkillPackageZipBrowser.MaxPreviewBytes,
+            }),
+            SkillZipFileNotFound n => NotFound(new { error = n.Reason }),
             _ => NotFound(),
         };
     }
@@ -83,7 +137,7 @@ public sealed class PackagesController(
     {
         try
         {
-            var actor = ActorSubject(httpContextAccessor);
+            var actor = RegistryActorResolver.Resolve(httpContextAccessor);
             var created = await mediator.Send(
                     new CreateSkillPackageCommand(
                         namespaceSlug,
@@ -98,6 +152,10 @@ public sealed class PackagesController(
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
         }
         catch (ArgumentException ex)
         {
@@ -118,7 +176,7 @@ public sealed class PackagesController(
     {
         try
         {
-            var actor = ActorSubject(httpContextAccessor);
+            var actor = RegistryActorResolver.Resolve(httpContextAccessor);
             var created = await mediator.Send(
                     new PublishSkillVersionCommand(
                         namespaceSlug,
@@ -126,7 +184,8 @@ public sealed class PackagesController(
                         body.Version,
                         body.Tag,
                         body.ArtifactUri,
-                        actor),
+                        actor,
+                        body.PublisherPatOneTime),
                     cancellationToken)
                 .ConfigureAwait(false);
             return Ok(created);
@@ -135,6 +194,10 @@ public sealed class PackagesController(
         {
             return NotFound(new { error = ex.Message });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
         catch (ArgumentException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -142,6 +205,66 @@ public sealed class PackagesController(
         catch (InvalidOperationException ex)
         {
             return Conflict(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{skillSlug}")]
+    public async Task<ActionResult<PackageSummaryResponse>> Update(
+        string namespaceSlug,
+        string skillSlug,
+        [FromBody] UpdateSkillPackageRequest body,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var actor = RegistryActorResolver.Resolve(httpContextAccessor);
+            var updated = await mediator
+                .Send(
+                    new UpdateSkillPackageCommand(
+                        namespaceSlug,
+                        skillSlug,
+                        body.Title,
+                        body.Description,
+                        actor),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpDelete("{skillSlug}")]
+    public async Task<ActionResult> Delete(
+        string namespaceSlug,
+        string skillSlug,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var actor = RegistryActorResolver.Resolve(httpContextAccessor);
+            await mediator
+                .Send(new DeleteSkillPackageCommand(namespaceSlug, skillSlug, actor), cancellationToken)
+                .ConfigureAwait(false);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
         }
     }
 
@@ -200,7 +323,7 @@ public sealed class PackagesController(
         try
         {
             var zipBytes = ms.ToArray();
-            var actor = ActorSubject(httpContextAccessor);
+            var actor = RegistryActorResolver.Resolve(httpContextAccessor);
             var created = await mediator
                 .Send(
                     new PublishSkillVersionCommand(
@@ -210,7 +333,7 @@ public sealed class PackagesController(
                         tagNorm,
                         installUri,
                         actor,
-                        zipBytes),
+                        PackageZip: zipBytes),
                     cancellationToken)
                 .ConfigureAwait(false);
             return Ok(created);
@@ -218,6 +341,10 @@ public sealed class PackagesController(
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
         }
         catch (ArgumentException ex)
         {
@@ -234,14 +361,14 @@ public sealed class PackagesController(
         var baseUrl = opts.PublicBaseUrl.TrimEnd('/');
         return $"{baseUrl}/api/install/{Uri.EscapeDataString(ns)}/{Uri.EscapeDataString(skill)}/{Uri.EscapeDataString(version)}/package.zip";
     }
-
-    private static string ActorSubject(IHttpContextAccessor accessor) =>
-        accessor.HttpContext?.Request.Headers.TryGetValue("X-Dev-User-Id", out var v) == true &&
-        !string.IsNullOrWhiteSpace(v)
-            ? v.ToString().Trim()
-            : "anonymous";
 }
 
 public sealed record CreateSkillPackageRequest(string Slug, string Title, string? Description);
 
-public sealed record PublishSkillVersionRequest(string Version, string? Tag, string ArtifactUri);
+public sealed record UpdateSkillPackageRequest(string Title, string? Description);
+
+public sealed record PublishSkillVersionRequest(
+    string Version,
+    string? Tag,
+    string ArtifactUri,
+    string? PublisherPatOneTime = null);

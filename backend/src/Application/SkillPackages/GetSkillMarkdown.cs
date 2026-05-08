@@ -4,7 +4,7 @@ using SkillRegistry.Application.Common;
 
 namespace SkillRegistry.Application.SkillPackages;
 
-public sealed record GetSkillMarkdownQuery(string NamespaceSlug, string SkillSlug, string Version)
+public sealed record GetSkillMarkdownQuery(string NamespaceSlug, string SkillSlug, string Version, string? ViewerSubject)
     : IRequest<SkillMarkdownResult>;
 
 public abstract record SkillMarkdownResult;
@@ -30,6 +30,9 @@ public sealed class GetSkillMarkdownQueryHandler(ISkillRegistryPersistence persi
             .ConfigureAwait(false);
 
         if (entity == null)
+            return new SkillMarkdownNotFound("Version not found.");
+
+        if (!NamespaceAccess.CanView(entity.Package.Namespace, request.ViewerSubject))
             return new SkillMarkdownNotFound("Version not found.");
 
         if (entity.PackageZip is not { Length: > 0 })

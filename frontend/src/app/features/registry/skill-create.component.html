@@ -1,0 +1,176 @@
+<div class="registry-form-page">
+  <div class="registry-form-back-row">
+    @if (mode() === 'edit') {
+      <a
+        [routerLink]="['/skills', editNsSlug(), editSkillSlug()]"
+        [queryParams]="skillDetailBackQueryParams()"
+        class="registry-form-back">← Back to skill</a>
+    } @else {
+      <a routerLink="/skills" class="registry-form-back">← All skills</a>
+    }
+  </div>
+
+  <div class="page-header registry-form-header">
+    <div class="header-content">
+      <h1 class="page-title">{{ mode() === 'create' ? 'New skill' : 'Edit skill' }}</h1>
+      <p class="page-subtitle">
+        @if (mode() === 'create') {
+          Pick a namespace, then set slug, title, and optional description.
+        } @else {
+          <code class="registry-form-slug-code">{{ editNsSlug() }}/{{ editSkillSlug() }}</code><span class="registry-form-subtitle-rest"> — slug is fixed.</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (loadingNs()) {
+    <div class="status-message loading">
+      <svg class="animate-pulse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+      <span>Loading namespaces…</span>
+    </div>
+  } @else if (pageError()) {
+    <div class="status-message error">{{ pageError() }}</div>
+    <div class="registry-form-actions-top">
+      @if (mode() === 'edit') {
+        <a
+          [routerLink]="['/skills', editNsSlug(), editSkillSlug()]"
+          [queryParams]="skillDetailBackQueryParams()"
+          class="action-btn secondary">Back to skill</a>
+      } @else {
+        <a routerLink="/skills" class="action-btn secondary">Back to skills</a>
+      }
+    </div>
+  } @else if (namespaces().length === 0) {
+    <div class="registry-form-panel empty-ns-hint">
+      <p class="empty-title">No namespaces yet</p>
+      <p class="empty-copy">Create a namespace first, then you can add skills to it.</p>
+      <div class="registry-form-footer empty-ns-actions">
+        <a routerLink="/" class="action-btn secondary">Browse namespaces</a>
+        <a routerLink="/ns/new" class="action-btn primary">New namespace</a>
+      </div>
+    </div>
+  } @else if (mode() === 'edit' && loadingSkill()) {
+    <div class="status-message loading">
+      <svg class="animate-pulse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+      <span>Loading skill…</span>
+    </div>
+  } @else {
+    <div class="registry-form-panel">
+      <form (ngSubmit)="submit()">
+        @if (saveError()) {
+          <div class="registry-form-error">{{ saveError() }}</div>
+        }
+
+        @if (mode() === 'create') {
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="sc-ns">Namespace</label>
+            <select
+              id="sc-ns"
+              class="registry-form-select"
+              name="scNs"
+              [(ngModel)]="nsSlugModel"
+              required
+            >
+              @for (n of namespaces(); track n.id) {
+                <option [value]="n.slug">{{ n.displayName }} ({{ n.slug }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="registry-form-grid">
+            <div class="registry-form-group registry-form-group--compact">
+              <label for="sc-slug">Skill slug</label>
+              <input
+                id="sc-slug"
+                class="registry-form-input registry-form-input--mono"
+                name="scSlug"
+                [(ngModel)]="skillSlug"
+                autocomplete="off"
+                placeholder="e.g. email-parser"
+                required
+              />
+            </div>
+            <div class="registry-form-group registry-form-group--compact">
+              <label for="sc-title">Title</label>
+              <input
+                id="sc-title"
+                class="registry-form-input"
+                name="scTitle"
+                [(ngModel)]="skillTitle"
+                placeholder="Short title"
+                required
+              />
+            </div>
+          </div>
+        } @else {
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="sc-ns-ro">Namespace</label>
+            <input
+              id="sc-ns-ro"
+              class="registry-form-input input-readonly"
+              type="text"
+              [value]="namespaceDisplayLabel()"
+              readonly
+              tabindex="-1"
+              aria-readonly="true"
+            />
+          </div>
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="sc-slug-ro">Skill slug</label>
+            <input
+              id="sc-slug-ro"
+              class="registry-form-input registry-form-input--mono input-readonly"
+              type="text"
+              [value]="skillSlug"
+              readonly
+              tabindex="-1"
+              aria-readonly="true"
+            />
+            <p class="field-hint">Slug cannot be changed after creation.</p>
+          </div>
+          <div class="registry-form-group registry-form-group--compact">
+            <label for="sc-title-edit">Title</label>
+            <input
+              id="sc-title-edit"
+              class="registry-form-input"
+              name="scTitleEdit"
+              [(ngModel)]="skillTitle"
+              placeholder="Short title"
+              required
+            />
+          </div>
+        }
+
+        <div class="registry-form-group registry-form-group--compact">
+          <label for="sc-desc">Description <span class="optional">(optional)</span></label>
+          <textarea
+            id="sc-desc"
+            class="registry-form-textarea"
+            name="scDesc"
+            [(ngModel)]="skillDescription"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="registry-form-footer">
+          <button type="button" class="action-btn secondary" (click)="cancel()" [disabled]="busy()">Cancel</button>
+          <button type="submit" class="action-btn primary" [disabled]="busy()">
+            {{
+              busy()
+                ? mode() === 'create'
+                  ? 'Creating…'
+                  : 'Saving…'
+                : mode() === 'create'
+                  ? 'Create skill'
+                  : 'Save changes'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

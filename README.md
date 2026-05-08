@@ -53,7 +53,7 @@ dotnet ef migrations add <Name> --project ../../Infrastructure/SkillRegistry.Inf
 
 Uses DevPilot’s global **`styles.css`** tokens (copied from `~/dev/andy-devpilot/frontend/src/styles.css`). Dev server proxies `/api` to the backend (`frontend/proxy.conf.json`).
 
-The SPA includes forms for **creating namespaces**, **creating skill packages**, **listing versions**, **publishing versions** (remote `artifactUri`), and **uploading a ZIP** for a version (stored in the database). Optional **Dev user** in the top bar maps to `X-Dev-User-Id` for audit trails.
+The SPA includes forms for **creating namespaces**, **creating skill packages**, **listing versions**, **publishing versions** (remote `artifactUri`), and **uploading a ZIP** for a version (stored in the database). Optional **Dev user** under **Settings** maps to `X-Dev-User-Id` for audit trails.
 
 ```bash
 cd frontend
@@ -75,6 +75,8 @@ Optional **`X-Dev-User-Id`** header is recorded as the actor for audits until OI
 |--------|-------|---------|
 | GET | `/api/namespaces` | List namespaces |
 | POST | `/api/namespaces` | Create namespace (+ owner membership) |
+| PUT | `/api/namespaces/{slug}` | Update namespace (display name, description, visibility) |
+| DELETE | `/api/namespaces/{slug}` | Delete namespace and all packages/versions (cascade) |
 | GET | `/api/namespaces/{slug}/packages` | List packages |
 | POST | `/api/namespaces/{slug}/packages` | Create package |
 | GET | `/api/namespaces/{slug}/packages/{skill}/versions` | List versions for a skill |

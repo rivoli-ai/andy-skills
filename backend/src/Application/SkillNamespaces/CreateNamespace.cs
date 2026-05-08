@@ -35,6 +35,7 @@ public sealed class CreateNamespaceCommandHandler(ISkillRegistryPersistence pers
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             Visibility = request.Visibility,
             CreatedAtUtc = DateTime.UtcNow,
+            CreatedBySubject = actor,
         };
 
         ns.Members.Add(new NamespaceMember
@@ -65,6 +66,7 @@ public sealed class CreateNamespaceCommandHandler(ISkillRegistryPersistence pers
             ns.DisplayName,
             ns.Description,
             ns.Visibility.ToString(),
-            ns.CreatedAtUtc);
+            ns.CreatedAtUtc,
+            ns.CreatedBySubject);
     }
 }

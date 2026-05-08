@@ -4,7 +4,7 @@ using SkillRegistry.Application.Common;
 
 namespace SkillRegistry.Application.SkillPackages;
 
-public sealed record ListSkillVersionsQuery(string NamespaceSlug, string SkillSlug)
+public sealed record ListSkillVersionsQuery(string NamespaceSlug, string SkillSlug, string? ViewerSubject)
     : IRequest<IReadOnlyList<SkillVersionResponse>>;
 
 public sealed class ListSkillVersionsQueryHandler(ISkillRegistryPersistence persistence)
@@ -15,7 +15,7 @@ public sealed class ListSkillVersionsQueryHandler(ISkillRegistryPersistence pers
         CancellationToken cancellationToken)
     {
         var nsSlug = SlugRules.NormalizeSlug(request.NamespaceSlug);
-        var ns = await persistence.GetNamespaceBySlugAsync(nsSlug, cancellationToken)
+        var ns = await persistence.GetNamespaceBySlugForViewerAsync(nsSlug, request.ViewerSubject, cancellationToken)
                  ?? throw new KeyNotFoundException($"Namespace '{nsSlug}' was not found.");
 
         var skillSlug = SlugRules.NormalizeSlug(request.SkillSlug);
@@ -33,7 +33,8 @@ public sealed class ListSkillVersionsQueryHandler(ISkillRegistryPersistence pers
                 v.IsLatest,
                 v.ArtifactUri,
                 v.PublishedAtUtc,
-                v.HasStoredZip))
+                v.HasStoredZip,
+                v.RemoteFetchRequiresPat))
             .ToList();
     }
 }

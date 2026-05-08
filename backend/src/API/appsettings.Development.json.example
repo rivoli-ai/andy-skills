@@ -1,0 +1,26 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Username=YOUR_USER;Password=YOUR_PASSWORD;Database=skillregistry"
+  },
+  "JWT": {
+    "SecretKey": "dev-secret-key-min-32-characters-long-change-me"
+  },
+  "AuthProviders": {
+    "AzureAd": {
+      "Enabled": true,
+      "Type": "FrontendOidc",
+      "Authority": "https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0",
+      "ClientId": "",
+      "SpaClientId": "",
+      "TenantId": "YOUR_TENANT_ID",
+      "Scopes": "openid profile email User.Read",
+      "ProfileEndpoint": "https://graph.microsoft.com/v1.0/me"
+    }
+  }
+}

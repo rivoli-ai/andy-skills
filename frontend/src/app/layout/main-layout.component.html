@@ -1,39 +1,58 @@
-<div class="shell">
-  <aside class="sidebar glass">
-    <div class="brand">
-      <span class="brand-mark gradient-text">Skill Registry</span>
-      <p class="brand-tag">Enterprise skill hub</p>
-    </div>
-    <nav class="nav">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Namespaces</a>
-    </nav>
-  </aside>
+<div class="app-container" [class.app-sidebar-collapsed]="sidebarCollapsed()">
+  <app-sidebar
+    [isCollapsed]="sidebarCollapsed()"
+    [mobileOpen]="sidebarMobileOpen()"
+    (collapseToggled)="toggleSidebarCollapsed()"
+    (mobileDrawerClose)="closeMobileSidebar()"
+  />
 
-  <div class="content-column">
-    <header class="header glass">
-      <div class="header-inner">
-        <h1 class="page-title">Registry</h1>
+  @if (sidebarMobileOpen()) {
+    <div class="sidebar-overlay" (click)="closeMobileSidebar()" role="presentation"></div>
+  }
+
+  <div class="app-content">
+    <header class="header">
+      <div class="header-content">
+        <button type="button" class="menu-toggle" (click)="toggleMobileSidebar()" aria-label="Toggle menu">
+          <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        <div class="header-title">
+          <app-registry-breadcrumb />
+        </div>
+
         <div class="header-actions">
-          <label class="dev-id">
-            <span class="dev-id-label">Dev user</span>
-            <input
-              type="text"
-              class="dev-id-input"
-              placeholder="optional"
-              [value]="devUserId()"
-              (input)="onDevUserInput($event)"
-              (blur)="persistDevUser()"
-            />
-          </label>
           <button type="button" class="theme-toggle" (click)="toggleTheme()" aria-label="Toggle theme">
-            {{ theme.theme() === 'dark' ? 'Light' : 'Dark' }} mode
+            @if (theme.theme() === 'light') {
+              <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            } @else {
+              <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            }
           </button>
         </div>
       </div>
     </header>
 
-    <main class="main-content animate-fade-in">
-      <router-outlet />
+    <main class="main-content">
+      <div class="main-content__viewport">
+        <router-outlet />
+      </div>
     </main>
   </div>
 </div>
