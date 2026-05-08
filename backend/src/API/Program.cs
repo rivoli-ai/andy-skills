@@ -45,7 +45,9 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-app.UseHttpsRedirection();
+// Containers / reverse proxies often terminate TLS elsewhere; opt out with DISABLE_HTTPS_REDIRECTION=true.
+if (!string.Equals(Environment.GetEnvironmentVariable("DISABLE_HTTPS_REDIRECTION"), "true", StringComparison.OrdinalIgnoreCase))
+    app.UseHttpsRedirection();
 app.UseRouting();
 if (corsOrigins.Length > 0)
     app.UseCors();

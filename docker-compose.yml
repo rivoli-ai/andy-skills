@@ -1,22 +1,93 @@
+name: skill
+
+# Configure via `.env` (see `.env.example`). Values mirror appsettings.json + Development overrides.
+
 services:
-  # Same Postgres credentials as DevPilot docker-compose (analyser / analyser_password).
-  # Only the database name differs: skillregistry (DevPilot uses analyzer by default).
-  # Prefer DevPilot’s postgres when both apps run: create DB skillregistry there and skip this service.
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-analyser}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-analyser_password}
       POSTGRES_DB: skillregistry
+    # Host port defaults to 5433 so a local Postgres on 5432 does not block this stack.
+    # Inside the Compose network the hostname is still `postgres` on port 5432.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
-      - skillregistry_pg:/var/lib/postgresql/data
+      - skill_pg:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-analyser} -d skillregistry"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      DISABLE_HTTPS_REDIRECTION: ${DISABLE_HTTPS_REDIRECTION:-true}
+      AllowedHosts: ${ALLOWED_HOSTS:-*}
+
+      Logging__LogLevel__Default: ${LOG_LEVEL_DEFAULT:-Information}
+      Logging__LogLevel__Microsoft.AspNetCore: ${LOG_LEVEL_MICROSOFT_ASPNETCORE:-Warning}
+      Logging__LogLevel__Microsoft.EntityFrameworkCore: ${LOG_LEVEL_EF:-Warning}
+
+      ConnectionStrings__DefaultConnection: >-
+        ${SKILL_DB_CONNECTION_STRING:-Host=postgres;Port=5432;Username=${DB_USER:-analyser};Password=${DB_PASSWORD:-analyser_password};Database=skillregistry}
+
+      JWT__Issuer: ${JWT_ISSUER:-SkillRegistry}
+      JWT__Audience: ${JWT_AUDIENCE:-SkillRegistry}
+      JWT__ExpiryHours: ${JWT_EXPIRY_HOURS:-12}
+      JWT__SecretKey: ${JWT_SECRET:-skill-registry-docker-bootstrap-secret-change-me-min-32!!}
+
+      Auth__RequireBearer: ${AUTH_REQUIRE_BEARER:-false}
+
+      AuthProviders__AzureAd__Enabled: ${AZURE_AD_ENABLED:-true}
+      AuthProviders__AzureAd__Type: ${AZURE_AD_TYPE:-FrontendOidc}
+      AuthProviders__AzureAd__Authority: ${AZURE_AD_AUTHORITY:-https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0}
+      AuthProviders__AzureAd__ClientId: ${AZURE_AD_CLIENT_ID:-}
+      AuthProviders__AzureAd__SpaClientId: ${AZURE_AD_SPA_CLIENT_ID:-}
+      AuthProviders__AzureAd__TenantId: ${AZURE_AD_TENANT_ID:-YOUR_TENANT_ID}
+      AuthProviders__AzureAd__Scopes: ${AZURE_AD_SCOPES:-openid profile email User.Read}
+      AuthProviders__AzureAd__ProfileEndpoint: ${AZURE_AD_PROFILE_ENDPOINT:-https://graph.microsoft.com/v1.0/me}
+
+      AuthProviders__Duende__Enabled: ${DUENDE_ENABLED:-false}
+      AuthProviders__Duende__Type: ${DUENDE_TYPE:-FrontendOidc}
+      AuthProviders__Duende__Authority: ${DUENDE_AUTHORITY:-https://localhost:5001}
+      AuthProviders__Duende__ClientId: ${DUENDE_CLIENT_ID:-skill-registry-spa}
+      AuthProviders__Duende__SpaClientId: ${DUENDE_SPA_CLIENT_ID:-skill-registry-spa}
+      AuthProviders__Duende__Scopes: ${DUENDE_SCOPES:-openid profile email}
+      AuthProviders__Duende__ProfileEndpoint: ${DUENDE_PROFILE_ENDPOINT:-https://localhost:5001/connect/userinfo}
+      AuthProviders__Duende__DangerousAcceptAnyServerCertificate: ${DUENDE_DANGEROUS_ACCEPT_ANY_CERT:-false}
+
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN_0:-http://localhost:${SKILL_WEB_PORT:-8080}}
+      Cors__AllowedOrigins__1: ${CORS_ORIGIN_1:-http://127.0.0.1:${SKILL_WEB_PORT:-8080}}
+
+      Skills__PublicBaseUrl: ${SKILLS_PUBLIC_BASE_URL:-http://localhost:${SKILL_WEB_PORT:-8080}}
+    expose:
+      - "8080"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        SKILL_PUBLIC_ORIGIN: >-
+          ${SKILL_PUBLIC_ORIGIN:-${SKILLS_PUBLIC_BASE_URL:-http://localhost:${SKILL_WEB_PORT:-8080}}}
+    ports:
+      - "${SKILL_WEB_PORT:-8080}:80"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
-  skillregistry_pg:
+  skill_pg:

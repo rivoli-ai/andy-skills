@@ -9,4 +9,5 @@ frontend/.angular/
 .vs/
 .env
 .env.*
+!.env.example
 backend/src/API/appsettings.Development.json
