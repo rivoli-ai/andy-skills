@@ -3,17 +3,39 @@
   "version": "0.1.0",
   "description": "Install a skill ZIP from the Skill Registry into a local skills folder (full tree preserved).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rivoli-ai/andy-skills.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/rivoli-ai/andy-skills/issues"
+  },
+  "homepage": "https://github.com/rivoli-ai/andy-skills/tree/main/cli#readme",
+  "keywords": [
+    "skills",
+    "agent-skills",
+    "cursor",
+    "cli",
+    "skill-registry",
+    "zip",
+    "andy-skills"
+  ],
   "engines": {
     "node": ">=18"
   },
   "bin": {
-    "andy-skills": "./bin/andy-skills.js"
+    "andy-skills": "bin/andy-skills.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16"
   },
   "files": [
     "bin",
-    "lib"
-  ]
+    "lib",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
