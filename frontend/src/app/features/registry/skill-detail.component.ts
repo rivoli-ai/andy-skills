@@ -53,6 +53,13 @@ type OverviewRow = {
   kind: 'dir' | 'file';
 };
 
+type CliInstallScenario = {
+  label: string;
+  platform: string;
+  target: string;
+  command: string;
+};
+
 function buildSkillZipTree(paths: string[]): TreeNode {
   const root: TreeNode = { name: '', fullPath: '', kind: 'dir', children: [] };
   for (const p of paths) {
@@ -837,11 +844,41 @@ export class SkillDetailComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  cliInstallGlobal(version: string): string {
+  cliInstallGlobal(version: string, dir?: string): string {
     const ns = this.nsSlug();
     const slug = this.skillSlug();
     const r = (this.appConfig.cliRegistryUrl ?? 'http://localhost:5289').replace(/\/+$/, '');
-    return `andy-skill install --registry ${r} ${ns} ${slug} ${version}`;
+    const command = `andy-skill install --registry ${r} ${ns} ${slug} ${version}`;
+    return dir ? `${command} --dir ${dir}` : command;
+  }
+
+  cliInstallScenarios(version: string): CliInstallScenario[] {
+    return [
+      {
+        label: 'Default CLI location',
+        platform: 'All platforms',
+        target: '~/.agents/skills',
+        command: this.cliInstallGlobal(version),
+      },
+      {
+        label: 'Cline workspace skills',
+        platform: 'All platforms',
+        target: '.cline/skills',
+        command: this.cliInstallGlobal(version, '.cline/skills'),
+      },
+      {
+        label: 'Cline global skills',
+        platform: 'macOS/Linux',
+        target: '~/.cline/skills',
+        command: this.cliInstallGlobal(version, '~/.cline/skills'),
+      },
+      {
+        label: 'Cline global skills',
+        platform: 'Windows PowerShell',
+        target: '$env:USERPROFILE\\.cline\\skills',
+        command: this.cliInstallGlobal(version, '"$env:USERPROFILE\\.cline\\skills"'),
+      },
+    ];
   }
 
   async copyText(text: string): Promise<void> {

@@ -98,18 +98,30 @@
 
           <div class="install-cli-block">
             <span class="label">Install the CLI globally</span>
-            <pre class="cli-snippet">npm i -g &#64;andy-cli/cli</pre>
-            <button type="button" class="btn-ghost btn-compact" (click)="copyText('npm i -g @andy-cli/cli')">
+            <pre class="cli-snippet">npm i -g &#64;andy-skill/cli</pre>
+            <button type="button" class="btn-ghost btn-compact" (click)="copyText('npm i -g @andy-skill/cli')">
               Copy
             </button>
           </div>
 
-          <div class="install-cli-block">
-            <span class="label">Install this skill</span>
-            <pre class="cli-snippet">{{ cliInstallGlobal(readmeVersion()) }}</pre>
-            <button type="button" class="btn-ghost btn-compact" (click)="copyText(cliInstallGlobal(readmeVersion()))">
-              Copy
-            </button>
+          <div class="install-cli-block install-cli-block--scenarios">
+            <span class="label">Install this skill for your client</span>
+            <p class="install-cli-hint">
+              The CLI supports <code class="inline-code">--dir</code>; use the path your AI client scans for skills.
+            </p>
+            @for (scenario of cliInstallScenarios(readmeVersion()); track scenario.label) {
+              <div class="install-scenario">
+                <div class="install-scenario-heading">
+                  <span class="install-scenario-title">{{ scenario.label }}</span>
+                  <span class="install-scenario-platform">{{ scenario.platform }}</span>
+                  <code class="install-scenario-target">{{ scenario.target }}</code>
+                </div>
+                <pre class="cli-snippet">{{ scenario.command }}</pre>
+                <button type="button" class="btn-ghost btn-compact" (click)="copyText(scenario.command)">
+                  Copy
+                </button>
+              </div>
+            }
           </div>
         </div>
       }
